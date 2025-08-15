@@ -1,0 +1,84 @@
+{% extends 'tracker/base.html' %} {% block title %}Profile - Price Tracker{%
+endblock %} {% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user-circle me-2"></i>User Profile
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Account Information</h6>
+                        <p><strong>Username:</strong> {{ user.username }}</p>
+                        <p><strong>Email:</strong> {{ user.email }}</p>
+                        <p>
+                            <strong>First Name:</strong> {{
+                            user.first_name|default:"Not set" }}
+                        </p>
+                        <p>
+                            <strong>Last Name:</strong> {{
+                            user.last_name|default:"Not set" }}
+                        </p>
+                        <p>
+                            <strong>Date Joined:</strong> {{
+                            user.date_joined|date:"M d, Y" }}
+                        </p>
+                        <p>
+                            <strong>Last Login:</strong> {{
+                            user.last_login|date:"M d, Y H:i"|default:"Never" }}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Account Statistics</h6>
+                        <p>
+                            <strong>Total Products:</strong> {{ total_products
+                            }}
+                        </p>
+                        <p>
+                            <strong>Active Products:</strong> {{ active_products
+                            }}
+                        </p>
+                        <p><strong>Total Alerts:</strong> {{ total_alerts }}</p>
+                        <p>
+                            <strong>Last Price Update:</strong> {{
+                            last_update|timesince|default:"Never" }} ago
+                        </p>
+                    </div>
+                </div>
+
+                <hr />
+
+                <div class="row">
+                    <div class="col-12">
+                        <h6>Account Actions</h6>
+                        <div class="btn-group" role="group">
+                            <a
+                                href="{% url 'tracker:dashboard' %}"
+                                class="btn btn-outline-primary"
+                            >
+                                <i class="fas fa-tachometer-alt me-1"></i
+                                >Dashboard
+                            </a>
+                            <a
+                                href="{% url 'tracker:product_add' %}"
+                                class="btn btn-outline-success"
+                            >
+                                <i class="fas fa-plus me-1"></i>Add Product
+                            </a>
+                            <a
+                                href="{% url 'tracker:export_data' %}"
+                                class="btn btn-outline-info"
+                            >
+                                <i class="fas fa-download me-1"></i>Export Data
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

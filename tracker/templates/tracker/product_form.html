@@ -1,0 +1,163 @@
+{% extends 'tracker/base.html' %} {% block title %} {% if form.instance.pk
+%}Edit Product{% else %}Add Product{% endif %} - Price Tracker {% endblock %} {%
+block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i
+                        class="fas fa-{% if form.instance.pk %}edit{% else %}plus{% endif %} me-2"
+                    ></i>
+                    {% if form.instance.pk %}Edit Product{% else %}Add New
+                    Product{% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label
+                                for="{{ form.name.id_for_label }}"
+                                class="form-label"
+                            >
+                                {{ form.name.label }}
+                            </label>
+                            {{ form.name }} {% if form.name.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.name.errors %} {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %} {% if form.name.help_text %}
+                            <div class="form-text">
+                                {{ form.name.help_text }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label
+                                for="{{ form.url.id_for_label }}"
+                                class="form-label"
+                            >
+                                {{ form.url.label }}
+                            </label>
+                            {{ form.url }} {% if form.url.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.url.errors %} {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %} {% if form.url.help_text %}
+                            <div class="form-text">
+                                {{ form.url.help_text }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label
+                                for="{{ form.currency.id_for_label }}"
+                                class="form-label"
+                            >
+                                {{ form.currency.label }}
+                            </label>
+                            {{ form.currency }} {% if form.currency.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.currency.errors %} {{ error
+                                }} {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label
+                                for="{{ form.alert_threshold.id_for_label }}"
+                                class="form-label"
+                            >
+                                {{ form.alert_threshold.label }}
+                            </label>
+                            {{ form.alert_threshold }} {% if
+                            form.alert_threshold.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.alert_threshold.errors %}
+                                {{ error }} {% endfor %}
+                            </div>
+                            {% endif %} {% if form.alert_threshold.help_text %}
+                            <div class="form-text">
+                                {{ form.alert_threshold.help_text }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a
+                            href="{% url 'tracker:dashboard' %}"
+                            class="btn btn-outline-secondary me-2"
+                        >
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>
+                            {% if form.instance.pk %}Update Product{% else %}Add
+                            Product{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Help Section -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-question-circle me-2"></i>How to Add
+                    Products
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>
+                            <i class="fab fa-amazon me-2"></i>Amazon Products
+                        </h6>
+                        <ol class="small">
+                            <li>Go to the Amazon product page</li>
+                            <li>
+                                Copy the URL from your browser's address bar
+                            </li>
+                            <li>Paste it in the URL field above</li>
+                            <li>Set your desired alert threshold</li>
+                        </ol>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>
+                            <i class="fas fa-shopping-cart me-2"></i>Flipkart
+                            Products
+                        </h6>
+                        <ol class="small">
+                            <li>Go to the Flipkart product page</li>
+                            <li>
+                                Copy the URL from your browser's address bar
+                            </li>
+                            <li>Paste it in the URL field above</li>
+                            <li>Set your desired alert threshold</li>
+                        </ol>
+                    </div>
+                </div>
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Tip:</strong> The system will automatically extract
+                    the product name and current price from the URL. You can
+                    modify the name if needed.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

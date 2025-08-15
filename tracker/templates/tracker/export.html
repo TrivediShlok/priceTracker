@@ -1,0 +1,142 @@
+{% extends 'tracker/base.html' %} {% block title %}Export Data - Price Tracker{%
+endblock %} {% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-download me-2"></i>Export Data
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Export Options</h6>
+                            <div class="mb-3">
+                                <label
+                                    for="{{ form.data_type.id_for_label }}"
+                                    class="form-label"
+                                    >Data Type</label
+                                >
+                                {{ form.data_type }} {% if form.data_type.errors
+                                %}
+                                <div class="text-danger">
+                                    {{ form.data_type.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label
+                                    for="{{ form.format.id_for_label }}"
+                                    class="form-label"
+                                    >Format</label
+                                >
+                                {{ form.format }} {% if form.format.errors %}
+                                <div class="text-danger">
+                                    {{ form.format.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label
+                                    for="{{ form.date_range.id_for_label }}"
+                                    class="form-label"
+                                    >Date Range</label
+                                >
+                                {{ form.date_range }} {% if
+                                form.date_range.errors %}
+                                <div class="text-danger">
+                                    {{ form.date_range.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Filters</h6>
+                            <div class="mb-3">
+                                <label
+                                    for="{{ form.products.id_for_label }}"
+                                    class="form-label"
+                                    >Products</label
+                                >
+                                {{ form.products }} {% if form.products.errors
+                                %}
+                                <div class="text-danger">
+                                    {{ form.products.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label
+                                    for="{{ form.include_predictions.id_for_label }}"
+                                    class="form-check-label"
+                                >
+                                    {{ form.include_predictions }} Include
+                                    Predictions
+                                </label>
+                                {% if form.include_predictions.errors %}
+                                <div class="text-danger">
+                                    {{ form.include_predictions.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label
+                                    for="{{ form.include_alerts.id_for_label }}"
+                                    class="form-check-label"
+                                >
+                                    {{ form.include_alerts }} Include Alerts
+                                </label>
+                                {% if form.include_alerts.errors %}
+                                <div class="text-danger">
+                                    {{ form.include_alerts.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    <div class="row">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-download me-1"></i>Export Data
+                            </button>
+                            <a
+                                href="{% url 'tracker:dashboard' %}"
+                                class="btn btn-outline-secondary"
+                            >
+                                <i class="fas fa-arrow-left me-1"></i>Back to
+                                Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </form>
+
+                {% if export_info %}
+                <hr />
+                <div class="alert alert-info">
+                    <h6>
+                        <i class="fas fa-info-circle me-2"></i>Export
+                        Information
+                    </h6>
+                    <p class="mb-1">
+                        <strong>Records:</strong> {{ export_info.record_count }}
+                    </p>
+                    <p class="mb-1">
+                        <strong>File Size:</strong> {{ export_info.file_size }}
+                    </p>
+                    <p class="mb-0">
+                        <strong>Generated:</strong> {{
+                        export_info.generated_at|date:"M d, Y H:i" }}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
