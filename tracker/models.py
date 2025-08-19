@@ -238,6 +238,14 @@ class ScrapingLog(models.Model):
     response_time = models.FloatField(null=True, blank=True, help_text="Response time in seconds")
     retry_count = models.IntegerField(default=0)
     
+    # ADD THESE MISSING FIELDS:
+    user_agent_used = models.CharField(
+        max_length=500, 
+        default='Mozilla/5.0 (compatible; PriceTrackerBot/1.0)', 
+        help_text="User agent string used for scraping"
+    )
+    url = models.URLField(blank=True, default='', help_text="URL that was scraped")
+    
     # Timestamps
     started_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)

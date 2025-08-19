@@ -1,163 +1,313 @@
-{% extends 'tracker/base.html' %} {% block title %} {% if form.instance.pk
-%}Edit Product{% else %}Add Product{% endif %} - Price Tracker {% endblock %} {%
-block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i
-                        class="fas fa-{% if form.instance.pk %}edit{% else %}plus{% endif %} me-2"
-                    ></i>
-                    {% if form.instance.pk %}Edit Product{% else %}Add New
-                    Product{% endif %}
-                </h5>
-            </div>
-            <div class="card-body">
+{% extends 'tracker/base.html' %}
+
+{% block title %}
+{% if form.instance.pk %}Edit Product{% else %}Add Product{% endif %} - Price Tracker
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        padding: 30px;
+        margin-top: 20px;
+    }
+    
+    .form-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 10px 10px 0 0;
+        margin: -30px -30px 30px -30px;
+    }
+    
+    .btn-custom {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        padding: 12px 30px;
+        border-radius: 5px;
+        transition: all 0.3s;
+    }
+    
+    .btn-custom:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        color: white;
+    }
+    
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .help-text {
+        background: #f8f9fa;
+        border-left: 4px solid #667eea;
+        padding: 10px 15px;
+        margin-top: 10px;
+        border-radius: 0 5px 5px 0;
+    }
+    
+    .error-message {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+        padding: 8px 15px;
+        border-radius: 5px;
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="form-container">
+                <div class="form-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-{% if form.instance.pk %}edit{% else %}plus{% endif %} me-2"></i>
+                        {% if form.instance.pk %}Edit Product{% else %}Add New Product{% endif %}
+                    </h4>
+                    <p class="mb-0 mt-2 opacity-75">
+                        {% if form.instance.pk %}
+                            Update product information and tracking settings
+                        {% else %}
+                            Add a product to start tracking its price changes
+                        {% endif %}
+                    </p>
+                </div>
+                
                 <form method="post" novalidate>
                     {% csrf_token %}
-
+                    
+                    <!-- Product Name Field -->
+                    <div class="mb-4">
+                        <label for="{{ form.name.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-tag me-2"></i>{{ form.name.label }}
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.help_text %}
+                            <div class="help-text">
+                                <small><i class="fas fa-info-circle me-1"></i>{{ form.name.help_text }}</small>
+                            </div>
+                        {% endif %}
+                        {% if form.name.errors %}
+                            {% for error in form.name.errors %}
+                                <div class="error-message">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Product URL Field -->
+                    <div class="mb-4">
+                        <label for="{{ form.url.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-link me-2"></i>{{ form.url.label }}
+                        </label>
+                        {{ form.url }}
+                        {% if form.url.help_text %}
+                            <div class="help-text">
+                                <small><i class="fas fa-info-circle me-1"></i>{{ form.url.help_text }}</small>
+                            </div>
+                        {% endif %}
+                        {% if form.url.errors %}
+                            {% for error in form.url.errors %}
+                                <div class="error-message">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Currency and Alert Threshold Row -->
                     <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label
-                                for="{{ form.name.id_for_label }}"
-                                class="form-label"
-                            >
-                                {{ form.name.label }}
-                            </label>
-                            {{ form.name }} {% if form.name.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.name.errors %} {{ error }}
-                                {% endfor %}
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="{{ form.currency.id_for_label }}" class="form-label fw-bold">
+                                    <i class="fas fa-coins me-2"></i>{{ form.currency.label }}
+                                </label>
+                                {{ form.currency }}
+                                {% if form.currency.help_text %}
+                                    <div class="help-text">
+                                        <small><i class="fas fa-info-circle me-1"></i>{{ form.currency.help_text }}</small>
+                                    </div>
+                                {% endif %}
+                                {% if form.currency.errors %}
+                                    {% for error in form.currency.errors %}
+                                        <div class="error-message">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
                             </div>
-                            {% endif %} {% if form.name.help_text %}
-                            <div class="form-text">
-                                {{ form.name.help_text }}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="{{ form.alert_threshold.id_for_label }}" class="form-label fw-bold">
+                                    <i class="fas fa-bell me-2"></i>{{ form.alert_threshold.label }}
+                                </label>
+                                {{ form.alert_threshold }}
+                                {% if form.alert_threshold.help_text %}
+                                    <div class="help-text">
+                                        <small><i class="fas fa-info-circle me-1"></i>{{ form.alert_threshold.help_text }}</small>
+                                    </div>
+                                {% endif %}
+                                {% if form.alert_threshold.errors %}
+                                    {% for error in form.alert_threshold.errors %}
+                                        <div class="error-message">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
                             </div>
-                            {% endif %}
                         </div>
                     </div>
-
-                    <div class="row">
-                        <div class="col-md-8 mb-3">
-                            <label
-                                for="{{ form.url.id_for_label }}"
-                                class="form-label"
-                            >
-                                {{ form.url.label }}
-                            </label>
-                            {{ form.url }} {% if form.url.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.url.errors %} {{ error }}
-                                {% endfor %}
-                            </div>
-                            {% endif %} {% if form.url.help_text %}
-                            <div class="form-text">
-                                {{ form.url.help_text }}
-                            </div>
-                            {% endif %}
+                    
+                    <!-- Non-field errors -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                            {% endfor %}
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label
-                                for="{{ form.currency.id_for_label }}"
-                                class="form-label"
-                            >
-                                {{ form.currency.label }}
-                            </label>
-                            {{ form.currency }} {% if form.currency.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.currency.errors %} {{ error
-                                }} {% endfor %}
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label
-                                for="{{ form.alert_threshold.id_for_label }}"
-                                class="form-label"
-                            >
-                                {{ form.alert_threshold.label }}
-                            </label>
-                            {{ form.alert_threshold }} {% if
-                            form.alert_threshold.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.alert_threshold.errors %}
-                                {{ error }} {% endfor %}
-                            </div>
-                            {% endif %} {% if form.alert_threshold.help_text %}
-                            <div class="form-text">
-                                {{ form.alert_threshold.help_text }}
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <a
-                            href="{% url 'tracker:dashboard' %}"
-                            class="btn btn-outline-secondary me-2"
-                        >
-                            <i class="fas fa-times me-1"></i>Cancel
+                    {% endif %}
+                    
+                    <!-- Form Actions -->
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                        <a href="{% url 'tracker:dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Cancel
                         </a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-1"></i>
-                            {% if form.instance.pk %}Update Product{% else %}Add
-                            Product{% endif %}
+                        
+                        <button type="submit" class="btn btn-custom">
+                            <i class="fas fa-{% if form.instance.pk %}save{% else %}plus{% endif %} me-2"></i>
+                            {% if form.instance.pk %}Update Product{% else %}Add Product{% endif %}
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
-
-        <!-- Help Section -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h6 class="mb-0">
-                    <i class="fas fa-question-circle me-2"></i>How to Add
-                    Products
-                </h6>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>
-                            <i class="fab fa-amazon me-2"></i>Amazon Products
-                        </h6>
-                        <ol class="small">
-                            <li>Go to the Amazon product page</li>
-                            <li>
-                                Copy the URL from your browser's address bar
-                            </li>
-                            <li>Paste it in the URL field above</li>
-                            <li>Set your desired alert threshold</li>
-                        </ol>
-                    </div>
-                    <div class="col-md-6">
-                        <h6>
-                            <i class="fas fa-shopping-cart me-2"></i>Flipkart
-                            Products
-                        </h6>
-                        <ol class="small">
-                            <li>Go to the Flipkart product page</li>
-                            <li>
-                                Copy the URL from your browser's address bar
-                            </li>
-                            <li>Paste it in the URL field above</li>
-                            <li>Set your desired alert threshold</li>
-                        </ol>
+                
+                <!-- Additional Information -->
+                <div class="mt-4 p-3 bg-light rounded">
+                    <h6 class="fw-bold mb-2">
+                        <i class="fas fa-lightbulb me-2 text-warning"></i>Tips for Success
+                    </h6>
+                    <ul class="mb-0 small">
+                        <li>Use the direct product page URL (not search or category pages)</li>
+                        <li>Supported sites: Amazon.in, Amazon.com, Flipkart.com</li>
+                        <li>Set alert threshold below current price to get notifications</li>
+                        <li>Price updates happen automatically every 6 hours</li>
+                    </ul>
+                </div>
+                
+                {% if form.instance.pk %}
+                <!-- Current Product Info -->
+                <div class="mt-4 p-3 bg-info bg-opacity-10 rounded">
+                    <h6 class="fw-bold mb-2">
+                        <i class="fas fa-info-circle me-2 text-info"></i>Current Information
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">Current Price:</small><br>
+                            <strong>
+                                {% if form.instance.current_price %}
+                                    {{ form.instance.current_price }} {{ form.instance.currency }}
+                                {% else %}
+                                    Not available yet
+                                {% endif %}
+                            </strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">Last Updated:</small><br>
+                            <strong>
+                                {% if form.instance.last_scraped %}
+                                    {{ form.instance.last_scraped|date:"M d, Y H:i" }}
+                                {% else %}
+                                    Never
+                                {% endif %}
+                            </strong>
+                        </div>
                     </div>
                 </div>
-                <div class="alert alert-info mt-3">
-                    <i class="fas fa-info-circle me-2"></i>
-                    <strong>Tip:</strong> The system will automatically extract
-                    the product name and current price from the URL. You can
-                    modify the name if needed.
-                </div>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// URL validation and preview
+document.getElementById('{{ form.url.id_for_label }}').addEventListener('blur', function() {
+    const url = this.value.toLowerCase();
+    const supportedSites = ['amazon.in', 'amazon.com', 'flipkart.com'];
+    const isSupported = supportedSites.some(site => url.includes(site));
+    
+    if (url && !isSupported) {
+        this.classList.add('is-invalid');
+    } else if (url) {
+        this.classList.remove('is-invalid');
+        this.classList.add('is-valid');
+    }
+});
+
+// Auto-generate product name from URL (simplified)
+document.getElementById('{{ form.url.id_for_label }}').addEventListener('blur', function() {
+    const nameField = document.getElementById('{{ form.name.id_for_label }}');
+    
+    if (!nameField.value && this.value) {
+        // Try to extract product name from URL (very basic)
+        const url = this.value;
+        let productName = '';
+        
+        if (url.includes('amazon')) {
+            // Amazon URLs often have product names in them
+            const parts = url.split('/');
+            const nameIndex = parts.findIndex(part => part === 'dp') - 1;
+            if (nameIndex > 0 && parts[nameIndex]) {
+                productName = parts[nameIndex].replace(/[-+]/g, ' ').trim();
+            }
+        } else if (url.includes('flipkart')) {
+            // Flipkart URLs often have product names
+            const parts = url.split('/');
+            if (parts.length > 3) {
+                productName = parts[3].replace(/[-+]/g, ' ').trim();
+            }
+        }
+        
+        if (productName && productName.length > 3) {
+            nameField.value = productName.substring(0, 50); // Limit length
+        }
+    }
+});
+
+// Form validation on submit
+document.querySelector('form').addEventListener('submit', function(e) {
+    const url = document.getElementById('{{ form.url.id_for_label }}').value.toLowerCase();
+    const supportedSites = ['amazon.in', 'amazon.com', 'flipkart.com'];
+    const isSupported = supportedSites.some(site => url.includes(site));
+    
+    if (url && !isSupported) {
+        e.preventDefault();
+        alert('Please enter a valid URL from Amazon or Flipkart.');
+        return false;
+    }
+    
+    // Show loading state
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+    submitBtn.disabled = true;
+    
+    // Re-enable button after 10 seconds (fallback)
+    setTimeout(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }, 10000);
+});
+</script>
 {% endblock %}

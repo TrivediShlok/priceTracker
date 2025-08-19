@@ -1,316 +1,263 @@
-{% extends 'tracker/base.html' %} {% block title %}Dashboard - Price Tracker{%
-endblock %} {% block content %}
+{% extends 'tracker/base.html' %}
+
+{% block title %}Dashboard - Price Tracker{% endblock %}
+
+{% block content %}
 <div class="row">
     <!-- Statistics Cards -->
-    <div class="col-12 mb-4">
-        <div class="row">
-            <div class="col-md-3 mb-3">
-                <div class="card stats-card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-box fa-2x mb-2"></i>
-                        <div class="stats-number">{{ total_products }}</div>
-                        <div>Total Products</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="card stats-card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-check-circle fa-2x mb-2"></i>
-                        <div class="stats-number">{{ active_products }}</div>
-                        <div>Active Products</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="card stats-card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-bell fa-2x mb-2"></i>
-                        <div class="stats-number">
-                            {{ products_with_alerts }}
-                        </div>
-                        <div>Products with Alerts</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="card stats-card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-sync fa-2x mb-2"></i>
-                        <div class="stats-number">{{ successful_scrapes }}</div>
-                        <div>Today's Updates</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Search and Filters -->
-    <div class="col-12 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-search me-2"></i>Search & Filter Products
-                </h5>
-            </div>
+    <div class="col-md-3 mb-4">
+        <div class="card card-stats bg-primary text-white">
             <div class="card-body">
-                <form method="get" class="row g-3">
-                    <div class="col-md-4">{{ search_form.search_query }}</div>
-                    <div class="col-md-2">{{ search_form.min_price }}</div>
-                    <div class="col-md-2">{{ search_form.max_price }}</div>
-                    <div class="col-md-2">{{ search_form.currency }}</div>
-                    <div class="col-md-2">{{ search_form.is_active }}</div>
-                    <div class="col-12">
-                        <button type="submit" class="btn btn-primary me-2">
-                            <i class="fas fa-search me-1"></i>Search
-                        </button>
-                        <a
-                            href="{% url 'tracker:dashboard' %}"
-                            class="btn btn-outline-secondary"
-                        >
-                            <i class="fas fa-times me-1"></i>Clear
-                        </a>
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h3 class="card-title">{{ total_products }}</h3>
+                        <p class="card-text">Total Products</p>
                     </div>
-                </form>
+                    <div class="align-self-center">
+                        <i class="fas fa-box fa-2x"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card card-stats bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h3 class="card-title">{{ active_products }}</h3>
+                        <p class="card-text">Active Products</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card card-stats bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h3 class="card-title">{{ products_with_alerts }}</h3>
+                        <p class="card-text">Products with Alerts</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-bell fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card card-stats bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h3 class="card-title">{{ successful_scrapes }}</h3>
+                        <p class="card-text">Today's Updates</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-sync fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <!-- Recent Price Changes -->
-    {% if recent_changes %}
-    <div class="col-12 mb-4">
+<!-- Bulk Update Button -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Price Updates</h5>
+                    <form method="post" action="{% url 'tracker:bulk_update_prices' %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary" onclick="return confirm('This will update prices for all active products. This may take several minutes. Continue?')">
+                            <i class="fas fa-sync"></i> Update All Prices
+                        </button>
+                    </form>
+                </div>
+                <small class="text-muted">Successful scrapes today: {{ successful_scrapes }} / {{ today_scrapes }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Price Changes -->
+{% if recent_changes %}
+<div class="row mb-4">
+    <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-chart-line me-2"></i>Recent Price Changes
-                </h5>
+                <h5 class="card-title mb-0">Recent Price Changes (7 days)</h5>
             </div>
             <div class="card-body">
                 <div class="row">
                     {% for change in recent_changes %}
-                    <div class="col-md-6 col-lg-4 mb-3">
-                        <div
-                            class="d-flex align-items-center p-3 border rounded"
-                        >
-                            <div class="flex-shrink-0">
-                                {% if change.is_positive %}
-                                <i
-                                    class="fas fa-arrow-up text-success fa-lg"
-                                ></i>
-                                {% else %}
-                                <i
-                                    class="fas fa-arrow-down text-danger fa-lg"
-                                ></i>
-                                {% endif %}
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h6 class="mb-1">{{ change.product.name }}</h6>
-                                <p class="mb-0">
-                                    <span
-                                        class="{% if change.is_positive %}price-change-positive{% else %}price-change-negative{% endif %}"
-                                    >
-                                        {% if change.is_positive %}+{% endif
-                                        %}{{
-                                        change.change_percentage|floatformat:2
-                                        }}%
-                                    </span>
-                                    <small class="text-muted">in 7 days</small>
-                                </p>
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-left-{% if change.is_positive %}success{% else %}danger{% endif %}">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ change.product.name|truncatechars:25 }}</h6>
+                                    <p class="card-text">
+                                        <span class="badge {% if change.is_positive %}bg-success{% else %}bg-danger{% endif %}">
+                                            {% if change.is_positive %}+{% endif %}{{ change.change_percentage|floatformat:2 }}%
+                                        </span>
+                                        <small class="text-muted">in 7 days</small>
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                    </div>
                     {% endfor %}
                 </div>
             </div>
         </div>
     </div>
-    {% endif %}
+</div>
+{% endif %}
 
-    <!-- Products List -->
+<!-- Products List -->
+<div class="row">
     <div class="col-12">
         <div class="card">
-            <div
-                class="card-header d-flex justify-content-between align-items-center"
-            >
-                <h5 class="mb-0">
-                    <i class="fas fa-list me-2"></i>Your Products
-                </h5>
-                <a
-                    href="{% url 'tracker:product_add' %}"
-                    class="btn btn-primary btn-sm"
-                >
-                    <i class="fas fa-plus me-1"></i>Add Product
-                </a>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Your Products</h5>
+                <a href="{% url 'tracker:add_product' %}" class="btn btn-primary">Add Product</a>
             </div>
             <div class="card-body">
                 {% if products %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Product</th>
-                                <th>Current Price</th>
-                                <th>Price Change</th>
-                                <th>Last Updated</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for product in products %}
-                            <tr>
-                                <td>
-                                    <div>
-                                        <strong>{{ product.name }}</strong>
-                                        <br />
-                                        <small class="text-muted"
-                                            >{{ product.currency }}</small
-                                        >
-                                    </div>
-                                </td>
-                                <td>
-                                    {% if product.current_price %}
-                                    <strong>{{ product.current_price }}</strong>
-                                    {% else %}
-                                    <span class="text-muted">No data</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if product.price_change_percentage is not
-                                    None %}
-                                    <span
-                                        class="{% if product.price_change_percentage > 0 %}price-change-positive{% elif product.price_change_percentage < 0 %}price-change-negative{% else %}price-change-neutral{% endif %}"
-                                    >
-                                        {% if product.price_change_percentage >
-                                        0 %}+{% endif %}{{
-                                        product.price_change_percentage|floatformat:2
-                                        }}%
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Current Price</th>
+                                    <th>Last Updated</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in products %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ product.name|truncatechars:40 }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ product.currency }}</small>
+                                        </td>
+                                        <td>
+                                            {% if product.current_price %}
+                                                <strong>{{ product.current_price }}</strong>
+                                            {% else %}
+                                                <span class="text-muted">No data</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if product.last_scraped %}
+                                                {{ product.last_scraped|timesince }} ago
+                                            {% else %}
+                                                <span class="text-muted">Never</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if product.is_active %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{% url 'tracker:product_detail' product.pk %}" 
+                                                   class="btn btn-outline-info btn-sm">View</a>
+                                                <a href="{% url 'tracker:edit_product' product.pk %}" 
+                                                   class="btn btn-outline-warning btn-sm">Edit</a>
+                                                <form method="post" action="{% url 'tracker:update_price_manual' product.id %}" style="display: inline;">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-outline-success btn-sm" 
+                                                            title="Update Price">
+                                                        <i class="fas fa-sync"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if is_paginated %}
+                        <nav aria-label="Products pagination">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1">&laquo; First</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                                    </li>
+                                {% endif %}
+
+                                <li class="page-item active">
+                                    <span class="page-link">
+                                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
                                     </span>
-                                    {% else %}
-                                    <span class="text-muted">N/A</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if product.last_scraped %}
-                                    <small
-                                        >{{ product.last_scraped|timesince }}
-                                        ago</small
-                                    >
-                                    {% else %}
-                                    <span class="text-muted">Never</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if product.is_active %}
-                                    <span class="badge bg-success">Active</span>
-                                    {% else %}
-                                    <span class="badge bg-secondary"
-                                        >Inactive</span
-                                    >
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <div
-                                        class="btn-group btn-group-sm"
-                                        role="group"
-                                    >
-                                        <a
-                                            href="{% url 'tracker:product_detail' product.pk %}"
-                                            class="btn btn-outline-primary"
-                                            title="View Details"
-                                        >
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <a
-                                            href="{% url 'tracker:product_edit' product.pk %}"
-                                            class="btn btn-outline-secondary"
-                                            title="Edit"
-                                        >
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <button
-                                            type="button"
-                                            class="btn btn-outline-info"
-                                            title="Toggle Status"
-                                            onclick="toggleProductStatus('{{ product.id }}')"
-                                        >
-                                            <i class="fas fa-toggle-on"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                                </li>
 
-                <!-- Pagination -->
-                {% if is_paginated %}
-                <nav aria-label="Products pagination" class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        {% if page_obj.has_previous %}
-                        <li class="page-item">
-                            <a
-                                class="page-link"
-                                href="?page=1{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}{% if request.GET.currency %}&currency={{ request.GET.currency }}{% endif %}{% if request.GET.is_active %}&is_active={{ request.GET.is_active }}{% endif %}"
-                            >
-                                <i class="fas fa-angle-double-left"></i>
-                            </a>
-                        </li>
-                        <li class="page-item">
-                            <a
-                                class="page-link"
-                                href="?page={{ page_obj.previous_page_number }}{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}{% if request.GET.currency %}&currency={{ request.GET.currency }}{% endif %}{% if request.GET.is_active %}&is_active={{ request.GET.is_active }}{% endif %}"
-                            >
-                                <i class="fas fa-angle-left"></i>
-                            </a>
-                        </li>
-                        {% endif %}
-
-                        <li class="page-item active">
-                            <span class="page-link">
-                                Page {{ page_obj.number }} of {{
-                                page_obj.paginator.num_pages }}
-                            </span>
-                        </li>
-
-                        {% if page_obj.has_next %}
-                        <li class="page-item">
-                            <a
-                                class="page-link"
-                                href="?page={{ page_obj.next_page_number }}{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}{% if request.GET.currency %}&currency={{ request.GET.currency }}{% endif %}{% if request.GET.is_active %}&is_active={{ request.GET.is_active }}{% endif %}"
-                            >
-                                <i class="fas fa-angle-right"></i>
-                            </a>
-                        </li>
-                        <li class="page-item">
-                            <a
-                                class="page-link"
-                                href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}{% if request.GET.currency %}&currency={{ request.GET.currency }}{% endif %}{% if request.GET.is_active %}&is_active={{ request.GET.is_active }}{% endif %}"
-                            >
-                                <i class="fas fa-angle-double-right"></i>
-                            </a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                {% endif %} {% else %}
-                <div class="text-center py-5">
-                    <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
-                    <h5 class="text-muted">No products found</h5>
-                    <p class="text-muted">
-                        Start tracking your first product to see it here.
-                    </p>
-                    <a
-                        href="{% url 'tracker:product_add' %}"
-                        class="btn btn-primary"
-                    >
-                        <i class="fas fa-plus me-1"></i>Add Your First Product
-                    </a>
-                </div>
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <h4>No products found</h4>
+                        <p class="text-muted">Start tracking your first product to see it here.</p>
+                        <a href="{% url 'tracker:add_product' %}" class="btn btn-primary">Add Your First Product</a>
+                    </div>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Toggle product status
+function toggleProductStatus(productId) {
+    fetch(`/product/${productId}/toggle-status/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        } else {
+            alert('Error updating product status: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error updating product status');
+    });
+}
+</script>
 {% endblock %}

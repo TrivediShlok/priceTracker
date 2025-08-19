@@ -1,338 +1,287 @@
-{% extends 'tracker/base.html' %} {% block title %}{{ product.name }} - Price
-Tracker{% endblock %} {% block content %}
+{% extends 'tracker/base.html' %}
+
+{% block title %}{{ product.name }} - Price Tracker{% endblock %}
+
+{% block content %}
 <div class="row">
-    <!-- Product Information -->
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-box me-2"></i>{{ product.name }}
-                </h5>
+    <!-- Left Column - Product Info -->
+    <div class="col-lg-8">
+        <!-- Product Header -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0">{{ product.name }}</h4>
+                <div class="btn-group">
+                    <a href="{% url 'tracker:edit_product' product.pk %}" class="btn btn-warning btn-sm">
+                        <i class="fas fa-edit me-1"></i>Edit
+                    </a>
+                    {% if product.is_active %}
+                        <form method="post" action="{% url 'tracker:update_price_manual' product.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-info btn-sm">
+                                <i class="fas fa-sync me-1"></i>Update Price
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <h6>Product Details</h6>
-                        <p>
-                            <strong>Current Price:</strong>
-                            {% if product.current_price %}
-                            <span class="h5 text-primary"
-                                >{{ product.current_price }} {{ product.currency
-                                }}</span
-                            >
-                            {% else %}
-                            <span class="text-muted">No data available</span>
-                            {% endif %}
-                        </p>
-                        <p>
-                            <strong>Alert Threshold:</strong>
-                            {% if product.alert_threshold %} {{
-                            product.alert_threshold }} {{ product.currency }} {%
-                            else %}
-                            <span class="text-muted">Not set</span>
-                            {% endif %}
-                        </p>
-                        <p>
-                            <strong>Status:</strong>
-                            {% if product.is_active %}
-                            <span class="badge bg-success">Active</span>
-                            {% else %}
-                            <span class="badge bg-secondary">Inactive</span>
-                            {% endif %}
-                        </p>
-                        <p>
-                            <strong>Last Updated:</strong>
-                            {% if product.last_scraped %} {{
-                            product.last_scraped|timesince }} ago {% else %}
-                            <span class="text-muted">Never</span>
-                            {% endif %}
-                        </p>
+                        <h5>Current Price</h5>
+                        {% if product.current_price %}
+                            <h3 class="text-primary">{{ product.current_price }} {{ product.currency }}</h3>
+                        {% else %}
+                            <h3 class="text-muted">No data available</h3>
+                            <p class="text-info">Click "Update Price" to fetch the current price</p>
+                        {% endif %}
+                        
+                        {% if price_volatility %}
+                            <p class="{% if price_volatility > 0 %}text-success{% else %}text-danger{% endif %}">
+                                {% if price_volatility > 0 %}↗{% else %}↘{% endif %}
+                                {{ price_volatility|floatformat:2 }}% (30 days)
+                            </p>
+                        {% endif %}
                     </div>
+                    
                     <div class="col-md-6">
-                        <h6>Price Statistics</h6>
-                        {% if min_price and max_price and avg_price %}
-                        <p>
-                            <strong>Lowest Price:</strong> {{ min_price }} {{
-                            product.currency }}
-                        </p>
-                        <p>
-                            <strong>Highest Price:</strong> {{ max_price }} {{
-                            product.currency }}
-                        </p>
-                        <p>
-                            <strong>Average Price:</strong> {{
-                            avg_price|floatformat:2 }} {{ product.currency }}
-                        </p>
-                        {% if price_volatility is not None %}
-                        <p>
-                            <strong>30-day Change:</strong>
-                            <span
-                                class="{% if price_volatility > 0 %}price-change-positive{% elif price_volatility < 0 %}price-change-negative{% else %}price-change-neutral{% endif %}"
-                            >
-                                {% if price_volatility > 0 %}+{% endif %}{{
-                                price_volatility|floatformat:2 }}%
-                            </span>
-                        </p>
-                        {% endif %} {% else %}
-                        <p class="text-muted">
-                            Insufficient price history for statistics
-                        </p>
+                        <h5>Statistics</h5>
+                        {% if min_price %}
+                            <p><strong>Min Price:</strong> {{ min_price|floatformat:2 }} {{ product.currency }}</p>
+                            <p><strong>Max Price:</strong> {{ max_price|floatformat:2 }} {{ product.currency }}</p>
+                            <p><strong>Avg Price:</strong> {{ avg_price|floatformat:2 }} {{ product.currency }}</p>
+                        {% else %}
+                            <p class="text-muted">No price statistics available</p>
                         {% endif %}
                     </div>
                 </div>
-
-                <hr />
-
-                <div class="row">
+                
+                <div class="row mt-4">
                     <div class="col-12">
-                        <h6>Product URL</h6>
-                        <a
-                            href="{{ product.url }}"
-                            target="_blank"
-                            class="text-break"
-                            >{{ product.url }}</a
-                        >
-                    </div>
-                </div>
-
-                <hr />
-
-                <div class="row">
-                    <div class="col-12">
-                        <h6>Actions</h6>
-                        <div class="btn-group" role="group">
-                            <a
-                                href="{% url 'tracker:product_edit' product.pk %}"
-                                class="btn btn-outline-primary"
-                            >
-                                <i class="fas fa-edit me-1"></i>Edit
-                            </a>
-                            <form
-                                method="post"
-                                action="{% url 'tracker:update_price_manual' product.pk %}"
-                                style="display: inline"
-                            >
-                                {% csrf_token %}
-                                <button
-                                    type="submit"
-                                    class="btn btn-outline-success"
-                                >
-                                    <i class="fas fa-sync me-1"></i>Update Price
-                                </button>
-                            </form>
-                            <a
-                                href="{% url 'tracker:add_alert' product.pk %}"
-                                class="btn btn-outline-warning"
-                            >
-                                <i class="fas fa-bell me-1"></i>Add Alert
-                            </a>
-                            <a
-                                href="{% url 'tracker:product_delete' product.pk %}"
-                                class="btn btn-outline-danger"
-                            >
-                                <i class="fas fa-trash me-1"></i>Delete
-                            </a>
+                        <h5>Product Information</h5>
+                        <div class="table-responsive">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>URL:</strong></td>
+                                    <td><a href="{{ product.url }}" target="_blank" class="text-decoration-none">
+                                        {{ product.url|truncatechars:50 }} <i class="fas fa-external-link-alt ms-1"></i>
+                                    </a></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Alert Threshold:</strong></td>
+                                    <td>
+                                        {% if product.alert_threshold %}
+                                            {{ product.alert_threshold }} {{ product.currency }}
+                                        {% else %}
+                                            <span class="text-muted">Not set</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        <span class="badge {% if product.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                            {% if product.is_active %}Active{% else %}Inactive{% endif %}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Last Updated:</strong></td>
+                                    <td>
+                                        {% if product.last_scraped %}
+                                            {{ product.last_scraped|timesince }} ago
+                                            <small class="text-muted">({{ product.last_scraped|date:"M d, Y H:i" }})</small>
+                                        {% else %}
+                                            <span class="text-muted">Never</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Created:</strong></td>
+                                    <td>{{ product.created_at|date:"M d, Y H:i" }}</td>
+                                </tr>
+                            </table>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Alerts and Quick Stats -->
-    <div class="col-md-4">
-        <!-- Active Alerts -->
-        <div class="card mb-3">
+        <!-- Price Chart -->
+        <div class="card">
             <div class="card-header">
-                <h6 class="mb-0">
-                    <i class="fas fa-bell me-2"></i>Active Alerts
-                </h6>
+                <h5 class="card-title mb-0"><i class="fas fa-chart-line me-2"></i>Price Chart</h5>
             </div>
             <div class="card-body">
-                {% if active_alerts %} {% for alert in active_alerts %}
-                <div
-                    class="d-flex justify-content-between align-items-center mb-2"
-                >
-                    <div>
-                        <small class="text-muted"
-                            >{{ alert.get_alert_type_display }}</small
-                        ><br />
-                        <strong
-                            >{{ alert.threshold_value }} {{ product.currency
-                            }}</strong
-                        >
+                {% if price_chart %}
+                    <div class="text-center">
+                        <img src="data:image/png;base64,{{ price_chart }}" 
+                             class="img-fluid" alt="Price Chart" 
+                             style="max-height: 400px;">
                     </div>
-                    <button
-                        class="btn btn-sm btn-outline-danger"
-                        onclick="deleteAlert({{ alert.id }})"
-                    >
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                {% endfor %} {% else %}
-                <p class="text-muted small">No active alerts</p>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No chart data available. Add some price history first.</p>
+                        {% if product.is_active %}
+                            <form method="post" action="{% url 'tracker:update_price_manual' product.id %}" style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-sync me-1"></i>Update Price Now
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
                 {% endif %}
-                <a
-                    href="{% url 'tracker:add_alert' product.pk %}"
-                    class="btn btn-sm btn-primary"
-                >
-                    <i class="fas fa-plus me-1"></i>Add Alert
+            </div>
+        </div>
+    </div>
+    
+    <!-- Right Column - Sidebar -->
+    <div class="col-lg-4">
+        <!-- Quick Actions -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'tracker:add_alert' product.id %}" class="btn btn-success">
+                        <i class="fas fa-bell me-2"></i>Add Price Alert
+                    </a>
+                    <a href="{% url 'tracker:edit_product' product.pk %}" class="btn btn-outline-primary">
+                        <i class="fas fa-edit me-2"></i>Edit Product
+                    </a>
+                    <a href="{% url 'tracker:dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Price History -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-history me-2"></i>Recent Price History</h5>
+            </div>
+            <div class="card-body">
+                {% if price_history %}
+                    <div class="list-group list-group-flush">
+                        {% for ph in price_history|slice:":10" %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <div>
+                                    <small class="text-muted">{{ ph.recorded_at|date:"M d, H:i" }}</small>
+                                    <br>
+                                    <small class="badge bg-light text-dark">{{ ph.source }}</small>
+                                </div>
+                                <span class="badge bg-primary rounded-pill">
+                                    {{ ph.price }} {{ ph.currency }}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% if price_history|length > 10 %}
+                        <small class="text-muted">Showing latest 10 of {{ price_history|length }} records</small>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-history fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No price history available.</p>
+                        <small class="text-muted">Update the price to start tracking.</small>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Active Alerts -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0"><i class="fas fa-bell me-2"></i>Active Alerts</h5>
+                <a href="{% url 'tracker:add_alert' product.id %}" class="btn btn-success btn-sm">
+                    <i class="fas fa-plus"></i>
                 </a>
+            </div>
+            <div class="card-body">
+                {% if active_alerts %}
+                    {% for alert in active_alerts %}
+                        <div class="alert alert-info d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ alert.get_alert_type_display }}</strong><br>
+                                <small>Threshold: {{ alert.threshold_value }} {{ product.currency }}</small>
+                                <br>
+                                <small class="text-muted">Created: {{ alert.created_at|date:"M d, Y" }}</small>
+                            </div>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteAlert({{ alert.id }})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-bell-slash fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-2">No active alerts</p>
+                        <a href="{% url 'tracker:add_alert' product.id %}" class="btn btn-success btn-sm">
+                            <i class="fas fa-plus me-1"></i>Add Alert
+                        </a>
+                    </div>
+                {% endif %}
             </div>
         </div>
 
         <!-- Recent Scraping Logs -->
+        {% if recent_scrapes %}
         <div class="card">
             <div class="card-header">
-                <h6 class="mb-0">
-                    <i class="fas fa-history me-2"></i>Recent Updates
-                </h6>
+                <h5 class="card-title mb-0"><i class="fas fa-cog me-2"></i>Recent Activity</h5>
             </div>
             <div class="card-body">
-                {% if recent_scrapes %} {% for scrape in recent_scrapes %}
-                <div
-                    class="d-flex justify-content-between align-items-center mb-2"
-                >
-                    <div>
-                        <small class="text-muted"
-                            >{{ scrape.started_at|timesince }} ago</small
-                        ><br />
-                        {% if scrape.scraped_price %}
-                        <strong
-                            >{{ scrape.scraped_price }} {{ product.currency
-                            }}</strong
-                        >
-                        {% endif %}
-                    </div>
-                    <span
-                        class="badge {% if scrape.status == 'success' %}bg-success{% elif scrape.status == 'failed' %}bg-danger{% else %}bg-warning{% endif %}"
-                    >
-                        {{ scrape.status }}
-                    </span>
+                <div class="list-group list-group-flush">
+                    {% for log in recent_scrapes|slice:":5" %}
+                        <div class="list-group-item px-0">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">{{ log.started_at|date:"M d, H:i" }}</small>
+                                <span class="badge {% if log.status == 'success' %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ log.status }}
+                                </span>
+                            </div>
+                            {% if log.error_message %}
+                                <small class="text-danger">{{ log.error_message|truncatechars:50 }}</small>
+                            {% endif %}
+                            {% if log.scraped_price %}
+                                <small class="text-success">Price: {{ log.scraped_price }}</small>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
                 </div>
-                {% endfor %} {% else %}
-                <p class="text-muted small">No recent updates</p>
-                {% endif %}
             </div>
         </div>
+        {% endif %}
     </div>
 </div>
+{% endblock %}
 
-<!-- Price History -->
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-chart-line me-2"></i>Price History
-                </h5>
-            </div>
-            <div class="card-body">
-                {% if price_history %}
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Price</th>
-                                <th>Source</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for record in price_history %}
-                            <tr>
-                                <td>
-                                    {{ record.recorded_at|date:"M d, Y H:i" }}
-                                </td>
-                                <td>
-                                    <strong
-                                        >{{ record.price }} {{ record.currency
-                                        }}</strong
-                                    >
-                                </td>
-                                <td>
-                                    <span class="badge bg-secondary"
-                                        >{{ record.source }}</span
-                                    >
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <p class="text-muted text-center py-3">
-                    No price history available
-                </p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Predictions -->
-{% if recent_predictions %}
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-crystal-ball me-2"></i>Demand Predictions
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Predicted Demand</th>
-                                <th>Predicted Price</th>
-                                <th>Confidence</th>
-                                <th>Model</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for pred in recent_predictions %}
-                            <tr>
-                                <td>
-                                    {{ pred.prediction_date|date:"M d, Y" }}
-                                </td>
-                                <td>
-                                    {{ pred.predicted_demand|floatformat:2 }}
-                                </td>
-                                <td>
-                                    {% if pred.predicted_price %} {{
-                                    pred.predicted_price }} {{ product.currency
-                                    }} {% else %}
-                                    <span class="text-muted">N/A</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <div class="progress" style="height: 20px">
-                                        <div
-                                            class="progress-bar"
-                                            role="progressbar"
-                                            style="width: {{ pred.confidence_score|floatformat:0 }}%"
-                                        >
-                                            {{
-                                            pred.confidence_score|floatformat:0
-                                            }}%
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="badge bg-info"
-                                        >{{ pred.model_type }}</span
-                                    >
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %} {% endblock %}
+{% block extra_js %}
+<script>
+function deleteAlert(alertId) {
+    if (confirm('Are you sure you want to delete this alert?')) {
+        fetch(`/alert/${alertId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert('Error deleting alert: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error deleting alert');
+        });
+    }
+}
+</script>
+{% endblock %}
