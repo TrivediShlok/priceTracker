@@ -1,963 +1,4 @@
-Django==4.2.7
-beautifulsoup4==4.12.2
-requests==2.31.0
-numpy==1.26.0
-pandas==2.1.0
-matplotlib==3.7.2
-seaborn==0.12.2
-scikit-learn==1.3.0
-prophet==1.1.4
-selenium==4.15.2
-celery==5.3.4
-python-decouple==3.8
-Pillow==10.0.1
-lxml==4.9.3
-fake-useragent==1.4.0
-
-dashbord.html
-
-{% extends 'tracker/base.html' %}
-
-{% block title %}Dashboard - Price Tracker{% endblock %}
-
-{% block content %}
-<div class="row">
-    <!-- Statistics Cards -->
-    <div class="col-md-3 mb-4">
-        <div class="card card-stats bg-primary text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h3 class="card-title">{{ total_products }}</h3>
-                        <p class="card-text">Total Products</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-box fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-3 mb-4">
-        <div class="card card-stats bg-success text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h3 class="card-title">{{ active_products }}</h3>
-                        <p class="card-text">Active Products</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-check-circle fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-3 mb-4">
-        <div class="card card-stats bg-warning text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h3 class="card-title">{{ products_with_alerts }}</h3>
-                        <p class="card-text">Products with Alerts</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-bell fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-3 mb-4">
-        <div class="card card-stats bg-info text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h3 class="card-title">{{ successful_scrapes }}</h3>
-                        <p class="card-text">Today's Updates</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-sync fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Bulk Update Button -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Price Updates</h5>
-                    <form method="post" action="{% url 'tracker:bulk_update_prices' %}" style="display: inline;">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-primary" onclick="return confirm('This will update prices for all active products. This may take several minutes. Continue?')">
-                            <i class="fas fa-sync"></i> Update All Prices
-                        </button>
-                    </form>
-                </div>
-                <small class="text-muted">Last successful scrapes today: {{ successful_scrapes }} / {{ today_scrapes }}</small>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Recent Price Changes -->
-{% if recent_changes %}
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Recent Price Changes (7 days)</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    {% for change in recent_changes %}
-                        <div class="col-md-4 mb-3">
-                            <div class="card border-left-{% if change.is_positive %}success{% else %}danger{% endif %}">
-                                <div class="card-body">
-                                    <h6 class="card-title">{{ change.product.name|truncatechars:25 }}</h6>
-                                    <p class="card-text">
-                                        <span class="badge {% if change.is_positive %}bg-success{% else %}bg-danger{% endif %}">
-                                            {% if change.is_positive %}+{% endif %}{{ change.change_percentage|floatformat:2 }}%
-                                        </span>
-                                        <small class="text-muted">in 7 days</small>
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
-
-<!-- Products Table -->
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Your Products</h5>
-                <a href="{% url 'tracker:add_product' %}" class="btn btn-primary">Add Product</a>
-            </div>
-            <div class="card-body">
-                {% if products %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Current Price</th>
-                                    <th>Price Change</th>
-                                    <th>Last Updated</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for product in products %}
-                                    <tr>
-                                        <td>
-                                            <strong>{{ product.name|truncatechars:40 }}</strong>
-                                            <br>
-                                            <small class="text-muted">{{ product.currency }}</small>
-                                        </td>
-                                        <td>
-                                            {% if product.current_price %}
-                                                <strong>{{ product.current_price }}</strong>
-                                            {% else %}
-                                                <span class="text-muted">No data</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <span class="text-muted">N/A</span>
-                                        </td>
-                                        <td>
-                                            {% if product.last_scraped %}
-                                                {{ product.last_scraped|timesince }} ago
-                                            {% else %}
-                                                <span class="text-muted">Never</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if product.is_active %}
-                                                <span class="badge bg-success">Active</span>
-                                            {% else %}
-                                                <span class="badge bg-secondary">Inactive</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <div class="btn-group btn-group-sm">
-                                                <a href="{% url 'tracker:product_detail' product.pk %}" 
-                                                   class="btn btn-outline-info">View</a>
-                                                <a href="{% url 'tracker:edit_product' product.pk %}" 
-                                                   class="btn btn-outline-warning">Edit</a>
-                                                <form method="post" action="{% url 'tracker:update_price_manual' product.id %}" style="display: inline;">
-                                                    {% csrf_token %}
-                                                    <button type="submit" class="btn btn-outline-success btn-sm" 
-                                                            title="Update Price" onclick="return confirm('Update price for {{ product.name }}?')">
-                                                        <i class="fas fa-sync"></i> Update
-                                                    </button>
-                                                </form>
-                                                <button onclick="toggleProductStatus('{{ product.id }}')" 
-                                                        class="btn btn-outline-secondary btn-sm">
-                                                    {% if product.is_active %}Disable{% else %}Enable{% endif %}
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Pagination -->
-                    {% if is_paginated %}
-                        <nav aria-label="Products pagination">
-                            <ul class="pagination justify-content-center">
-                                {% if page_obj.has_previous %}
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page=1">&laquo; First</a>
-                                    </li>
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
-                                    </li>
-                                {% endif %}
-
-                                <li class="page-item active">
-                                    <span class="page-link">
-                                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-                                    </span>
-                                </li>
-
-                                {% if page_obj.has_next %}
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
-                                    </li>
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
-                                    </li>
-                                {% endif %}
-                            </ul>
-                        </nav>
-                    {% endif %}
-                {% else %}
-                    <div class="text-center py-5">
-                        <h4>No products found</h4>
-                        <p class="text-muted">Start tracking your first product to see it here.</p>
-                        <a href="{% url 'tracker:add_product' %}" class="btn btn-primary">Add Your First Product</a>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-// Toggle product status
-function toggleProductStatus(productId) {
-    fetch(`/product/${productId}/toggle-status/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-            'Content-Type': 'application/json',
-        },
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            location.reload();
-        } else {
-            alert('Error updating product status: ' + data.message);
-        }
-    })
-    .catch(error => {
-        alert('Error updating product status');
-    });
-}
-</script>
-{% endblock %}
-
-utils.py
-
-"""
-Utility functions for the Price Tracker application.
-"""
-
-import requests
-import time
-import logging
-import re
-import io
-import base64
-import signal
-from datetime import datetime, timedelta
-from decimal import Decimal
-from typing import Optional, Dict, List, Tuple, Any
-import json
-
-# Web scraping imports
-from bs4 import BeautifulSoup
-from fake_useragent import UserAgent
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
-
-# Data processing imports
-import numpy as np
-import pandas as pd
-
-# Machine Learning imports
-from sklearn.linear_model import LinearRegression
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_absolute_error, r2_score
-
-# Prophet for time series forecasting
-try:
-    from prophet import Prophet
-    PROPHET_AVAILABLE = True
-except ImportError:
-    PROPHET_AVAILABLE = False
-    logging.warning("Prophet not available. Using simple regression models only.")
-
-# Visualization imports
-import matplotlib
-matplotlib.use('Agg')  # Use non-interactive backend
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import seaborn as sns
-
-# Django imports
-from django.utils import timezone
-from django.conf import settings
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
-
-# Set up logging
-logger = logging.getLogger(__name__)
-
-# Configure matplotlib and seaborn
-plt.style.use('default')
-sns.set_palette("husl")
-plt.rcParams['figure.figsize'] = (12, 6)
-plt.rcParams['figure.dpi'] = 100
-plt.rcParams['font.size'] = 10
-
-
-class TimeoutError(Exception):
-    """Custom timeout error for scraping operations."""
-    pass
-
-
-def timeout_handler(signum, frame):
-    """Signal handler for timeout operations."""
-    raise TimeoutError("Operation timed out")
-
-
-class WebScraper:
-    """Enhanced web scraping utility class."""
-    
-    def __init__(self):
-        """Initialize the scraper with configuration and user agents."""
-        self.session = requests.Session()
-        
-        try:
-            self.ua = UserAgent()
-            self.user_agent = self.ua.random
-        except:
-            # Fallback user agent if fake-useragent fails
-            self.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        
-        self.session.headers.update({
-            'User-Agent': self.user_agent,
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Accept-Encoding': 'gzip, deflate',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1',
-        })
-        
-        # Chrome options for Selenium
-        self.chrome_options = Options()
-        self.chrome_options.add_argument('--headless')
-        self.chrome_options.add_argument('--no-sandbox')
-        self.chrome_options.add_argument('--disable-dev-shm-usage')
-        self.chrome_options.add_argument('--disable-gpu')
-        self.chrome_options.add_argument(f'--user-agent={self.user_agent}')
-    
-    def scrape_price(self, product) -> Tuple[Optional[Decimal], str]:
-        """Main method to scrape price with comprehensive error handling."""
-        from .models import ScrapingLog
-        
-        start_time = time.time()
-        
-        # FIXED: Only include fields that exist in the ScrapingLog model
-        log_entry = ScrapingLog.objects.create(
-            product=product,
-            user=product.user,  # Get user from the product
-            status='failed',
-            started_at=timezone.now()
-            # Removed: user_agent_used and url fields since they don't exist
-        )
-        
-        try:
-            url = product.url.lower()
-            price = None
-            error_message = ""
-            
-            if 'amazon' in url:
-                price = self.scrape_amazon_price(product.url)
-                if not price:
-                    error_message = "Could not extract price from Amazon page"
-            elif 'flipkart' in url:
-                price = self.scrape_flipkart_price(product.url)
-                if not price:
-                    error_message = "Could not extract price from Flipkart page"
-            else:
-                error_message = "Unsupported e-commerce site"
-            
-            # Update log entry with results
-            log_entry.status = 'success' if price else 'failed'
-            log_entry.scraped_price = price
-            log_entry.response_time = time.time() - start_time
-            log_entry.completed_at = timezone.now()
-            log_entry.error_message = error_message
-            log_entry.save()
-            
-            return price, log_entry.status
-            
-        except Exception as e:
-            log_entry.error_message = str(e)
-            log_entry.response_time = time.time() - start_time
-            log_entry.completed_at = timezone.now()
-            log_entry.save()
-            
-            logger.error(f"Error scraping price for {product.name}: {str(e)}")
-            return None, 'failed'
-    
-    # Keep all other methods (scrape_amazon_price, scrape_flipkart_price, etc.) the same
-
-
-class DataProcessor:
-    """Data processing utility class using Pandas and NumPy."""
-    
-    @staticmethod
-    def get_price_history_dataframe(product, days: int = 30) -> pd.DataFrame:
-        """Get price history as a Pandas DataFrame for analysis."""
-        from .models import PriceHistory
-        
-        end_date = timezone.now()
-        start_date = end_date - timedelta(days=days)
-        
-        history = PriceHistory.objects.filter(
-            product=product,
-            recorded_at__gte=start_date,
-            is_valid=True
-        ).order_by('recorded_at')
-        
-        if not history.exists():
-            return pd.DataFrame()
-        
-        data = []
-        for record in history:
-            data.append({
-                'date': record.recorded_at.date(),
-                'datetime': record.recorded_at,
-                'price': float(record.price),
-                'source': record.source
-            })
-        
-        df = pd.DataFrame(data)
-        if not df.empty:
-            df['datetime'] = pd.to_datetime(df['datetime'])
-            df.set_index('datetime', inplace=True)
-            df.sort_index(inplace=True)
-        
-        return df
-    
-    @staticmethod
-    def calculate_moving_averages(df: pd.DataFrame, windows: List[int] = [7, 14, 30]) -> pd.DataFrame:
-        """Calculate moving averages using Pandas."""
-        if df.empty:
-            return df
-        
-        result_df = df.copy()
-        
-        for window in windows:
-            if len(result_df) >= window:
-                result_df[f'ma_{window}'] = result_df['price'].rolling(
-                    window=window, min_periods=1
-                ).mean()
-        
-        return result_df
-    
-    @staticmethod
-    def calculate_price_statistics(df: pd.DataFrame) -> Dict[str, float]:
-        """Calculate comprehensive price statistics using NumPy."""
-        if df.empty or 'price' not in df.columns:
-            return {}
-        
-        prices = df['price'].values
-        
-        stats = {
-            'mean': np.mean(prices),
-            'median': np.median(prices),
-            'std': np.std(prices),
-            'min': np.min(prices),
-            'max': np.max(prices),
-            'range': np.max(prices) - np.min(prices),
-            'coefficient_of_variation': np.std(prices) / np.mean(prices) if np.mean(prices) > 0 else 0,
-        }
-        
-        if len(prices) > 1:
-            price_changes = np.diff(prices)
-            stats.update({
-                'volatility': np.std(price_changes),
-                'avg_daily_change': np.mean(price_changes),
-                'max_daily_increase': np.max(price_changes),
-                'max_daily_decrease': np.min(price_changes),
-            })
-        
-        return stats
-    
-    @staticmethod
-    def get_chart_data_json(product, days: int = 30) -> str:
-        """Get price history data formatted for Chart.js."""
-        df = DataProcessor.get_price_history_dataframe(product, days)
-        
-        if df.empty:
-            return json.dumps({'labels': [], 'prices': []})
-        
-        labels = [date.strftime('%Y-%m-%d') for date in df.index.date]
-        prices = df['price'].tolist()
-        
-        return json.dumps({
-            'labels': labels,
-            'prices': prices,
-            'product_name': product.name,
-            'currency': product.currency
-        })
-
-
-class MLPredictor:
-    """Machine Learning utility class for price and demand prediction."""
-    
-    def __init__(self):
-        """Initialize ML models and scalers."""
-        self.linear_model = LinearRegression()
-        self.rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
-        self.scaler = StandardScaler()
-    
-    def prepare_features(self, df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
-        """Prepare features for machine learning models."""
-        if df.empty or len(df) < 5:
-            return np.array([]), np.array([])
-        
-        df_features = df.copy()
-        df_features['price_lag_1'] = df_features['price'].shift(1)
-        df_features['price_lag_2'] = df_features['price'].shift(2)
-        df_features['price_lag_3'] = df_features['price'].shift(3)
-        
-        df_features['price_ma_3'] = df_features['price'].rolling(3).mean()
-        df_features['price_ma_7'] = df_features['price'].rolling(7).mean()
-        df_features['price_std_3'] = df_features['price'].rolling(3).std()
-        
-        df_features['day_of_week'] = df_features.index.dayofweek
-        df_features['day_of_month'] = df_features.index.day
-        df_features['month'] = df_features.index.month
-        
-        df_features = df_features.dropna()
-        
-        if len(df_features) < 3:
-            return np.array([]), np.array([])
-        
-        feature_columns = [
-            'price_lag_1', 'price_lag_2', 'price_lag_3',
-            'price_ma_3', 'price_ma_7', 'price_std_3',
-            'day_of_week', 'day_of_month', 'month'
-        ]
-        
-        X = df_features[feature_columns].values
-        y = df_features['price'].values
-        
-        return X, y
-    
-    def predict_linear_regression(self, product, days_ahead: int = 7) -> List[Dict]:
-        """Predict future prices using Linear Regression."""
-        try:
-            df = DataProcessor.get_price_history_dataframe(product, days=60)
-            if df.empty:
-                return []
-            
-            X, y = self.prepare_features(df)
-            if len(X) == 0:
-                return []
-            
-            X_scaled = self.scaler.fit_transform(X)
-            
-            if len(X_scaled) > 10:
-                X_train, X_test, y_train, y_test = train_test_split(
-                    X_scaled, y, test_size=0.2, random_state=42
-                )
-            else:
-                X_train, X_test, y_train, y_test = X_scaled, X_scaled, y, y
-            
-            self.linear_model.fit(X_train, y_train)
-            
-            if len(X_test) > 0:
-                y_pred_test = self.linear_model.predict(X_test)
-                r2 = r2_score(y_test, y_pred_test)
-                confidence = max(0, min(1, r2))
-            else:
-                confidence = 0.5
-            
-            predictions = []
-            current_price = float(df['price'].iloc[-1])
-            
-            for i in range(days_ahead):
-                if len(df) >= 3:
-                    recent_prices = df['price'].tail(3).values
-                    trend = np.mean(np.diff(recent_prices))
-                    pred_price = current_price + (trend * (i + 1))
-                else:
-                    pred_price = current_price
-                
-                pred_price = max(current_price * 0.5, min(current_price * 2.0, pred_price))
-                
-                prediction_date = timezone.now().date() + timedelta(days=i+1)
-                
-                predictions.append({
-                    'date': prediction_date,
-                    'predicted_price': round(pred_price, 2),
-                    'confidence_score': confidence,
-                    'model_type': 'linear_regression'
-                })
-            
-            return predictions
-            
-        except Exception as e:
-            logger.error(f"Error in linear regression prediction: {str(e)}")
-            return []
-    
-    def predict_demand(self, product) -> float:
-        """Predict demand score based on price trends and volatility."""
-        try:
-            df = DataProcessor.get_price_history_dataframe(product, days=30)
-            if df.empty:
-                return 0.5
-            
-            if len(df) >= 2:
-                price_trend = (df['price'].iloc[-1] - df['price'].iloc[0]) / df['price'].iloc
-                trend_factor = max(0, 1 - price_trend)
-            else:
-                trend_factor = 0.5
-            
-            if len(df) >= 3:
-                volatility = np.std(df['price']) / np.mean(df['price'])
-                volatility_factor = max(0, 1 - volatility)
-            else:
-                volatility_factor = 0.5
-            
-            demand_score = (trend_factor * 0.6 + volatility_factor * 0.4)
-            return max(0.1, min(0.9, demand_score))
-            
-        except Exception as e:
-            logger.error(f"Error predicting demand: {str(e)}")
-            return 0.5
-
-
-class ChartGenerator:
-    """Chart generation utility class using Matplotlib."""
-    
-    def __init__(self):
-        """Initialize chart styling."""
-        plt.style.use('default')
-        plt.rcParams['figure.figsize'] = (12, 6)
-        plt.rcParams['figure.dpi'] = 100
-        plt.rcParams['font.size'] = 10
-    
-    def generate_price_trend_chart(self, product) -> str:
-        """Generate a price trend chart using Matplotlib."""
-        try:
-            df = DataProcessor.get_price_history_dataframe(product, days=60)
-            if df.empty:
-                return self._create_no_data_chart("No price history available")
-            
-            fig, ax = plt.subplots(figsize=(12, 6))
-            
-            ax.plot(df.index, df['price'], linewidth=2, color='#2E86AB', label='Price', marker='o', markersize=3)
-            
-            df_with_ma = DataProcessor.calculate_moving_averages(df, [7, 14])
-            if 'ma_7' in df_with_ma.columns:
-                ax.plot(df_with_ma.index, df_with_ma['ma_7'], 
-                       linewidth=1, color='#A23B72', alpha=0.7, label='7-day MA')
-            if 'ma_14' in df_with_ma.columns:
-                ax.plot(df_with_ma.index, df_with_ma['ma_14'], 
-                       linewidth=1, color='#F18F01', alpha=0.7, label='14-day MA')
-            
-            if product.alert_threshold:
-                ax.axhline(y=float(product.alert_threshold), color='red', 
-                          linestyle='--', alpha=0.5, label='Alert Threshold')
-            
-            ax.set_title(f'Price Trend - {product.name}', fontsize=14, fontweight='bold')
-            ax.set_xlabel('Date')
-            ax.set_ylabel(f'Price ({product.currency})')
-            ax.legend()
-            ax.grid(True, alpha=0.3)
-            
-            ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
-            ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
-            plt.xticks(rotation=45)
-            
-            plt.tight_layout()
-            return self._fig_to_base64(fig)
-            
-        except Exception as e:
-            logger.error(f"Error generating price trend chart: {str(e)}")
-            return self._create_error_chart("Error generating chart")
-    
-    def _fig_to_base64(self, fig) -> str:
-        """Convert matplotlib figure to base64 string for web display."""
-        buffer = io.BytesIO()
-        fig.savefig(buffer, format='png', bbox_inches='tight', dpi=100)
-        buffer.seek(0)
-        image_png = buffer.getvalue()
-        buffer.close()
-        plt.close(fig)  # Important: close figure to free memory
-        
-        graphic = base64.b64encode(image_png)
-        return graphic.decode('utf-8')
-    
-    def _create_no_data_chart(self, message: str) -> str:
-        """Create a simple chart showing no data message."""
-        fig, ax = plt.subplots(figsize=(8, 4))
-        ax.text(0.5, 0.5, message, ha='center', va='center', fontsize=14)
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
-        ax.axis('off')
-        return self._fig_to_base64(fig)
-    
-    def _create_error_chart(self, message: str) -> str:
-        """Create a simple chart showing error message."""
-        fig, ax = plt.subplots(figsize=(8, 4))
-        ax.text(0.5, 0.5, message, ha='center', va='center', fontsize=14, color='red')
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
-        ax.axis('off')
-        return self._fig_to_base64(fig)
-
-
-# Utility functions
-def calculate_price_change_percentage(product, days: int = 30) -> Optional[float]:
-    """Calculate the percentage change in price over a specified period."""
-    try:
-        df = DataProcessor.get_price_history_dataframe(product, days)
-        
-        if df.empty or len(df) < 2:
-            return None
-        
-        current_price = df['price'].iloc[-1]
-        past_price = df['price'].iloc[0]
-        
-        if past_price == 0:
-            return None
-        
-        return ((current_price - past_price) / past_price) * 100
-        
-    except Exception as e:
-        logger.error(f"Error calculating price change: {str(e)}")
-        return None
-
-
-def check_alert_conditions(alert) -> bool:
-    """Check if alert conditions are met and trigger notifications."""
-    if alert.status != 'active':
-        return False
-    
-    product = alert.product
-    
-    if not product.current_price:
-        return False
-    
-    current_price = float(product.current_price)
-    threshold = float(alert.threshold_value)
-    
-    triggered = False
-    
-    if alert.alert_type == 'price_drop' and current_price <= threshold:
-        triggered = True
-    elif alert.alert_type == 'price_increase' and current_price >= threshold:
-        triggered = True
-    
-    if triggered:
-        alert.status = 'triggered'
-        alert.triggered_at = timezone.now()
-        alert.save()
-        
-        send_alert_notification(alert)
-        
-        logger.info(f"Alert triggered for {product.name}: {alert.alert_type}")
-        return True
-    
-    return False
-
-
-def send_alert_notification(alert):
-    """Send alert notifications via email."""
-    product = alert.product
-    user = alert.user
-    
-    try:
-        subject = f'Price Alert: {product.name}'
-        
-        context = {
-            'user': user,
-            'product': product,
-            'alert': alert,
-            'current_price': product.current_price,
-            'threshold': alert.threshold_value,
-            'price_url': product.url,
-        }
-        
-        try:
-            html_message = render_to_string('tracker/email/price_alert.html', context)
-            plain_message = strip_tags(html_message)
-        except:
-            plain_message = f"""
-            Hello {user.first_name or user.username},
-            
-            Your price alert for "{product.name}" has been triggered!
-            
-            Alert Type: {alert.get_alert_type_display()}
-            Current Price: {product.current_price} {product.currency}
-            Your Threshold: {alert.threshold_value} {product.currency}
-            
-            View product: {product.url}
-            
-            Best regards,
-            Price Tracker Team
-            """
-            html_message = None
-        
-        if alert.email_notification and user.email:
-            send_mail(
-                subject=subject,
-                message=plain_message,
-                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@example.com'),
-                recipient_list=[user.email],
-                html_message=html_message,
-                fail_silently=False,
-            )
-            logger.info(f"Alert email sent to {user.email} for product {product.name}")
-            
-    except Exception as e:
-        logger.error(f"Failed to send alert notification: {str(e)}")
-
-
-def update_product_prices():
-    """Update prices for all active products."""
-    from .models import Product, PriceHistory
-    
-    scraper = WebScraper()
-    active_products = Product.objects.filter(is_active=True)
-    
-    updated_count = 0
-    failed_count = 0
-    
-    logger.info(f"Starting price update for {active_products.count()} products")
-    
-    for product in active_products:
-        try:
-            price, status = scraper.scrape_price(product)
-            
-            if price and status == 'success':
-                old_price = product.current_price
-                product.current_price = price
-                product.last_scraped = timezone.now()
-                product.save()
-                
-                PriceHistory.objects.create(
-                    product=product,
-                    price=price,
-                    currency=product.currency,
-                    source='automated_scraper'
-                )
-                
-                updated_count += 1
-                logger.info(f"Updated price for {product.name}: {old_price} -> {price}")
-                
-                for alert in product.alerts.filter(status='active'):
-                    check_alert_conditions(alert)
-                    
-            else:
-                failed_count += 1
-                logger.warning(f"Failed to update price for {product.name}")
-                
-        except Exception as e:
-            failed_count += 1
-            logger.error(f"Error updating price for {product.name}: {str(e)}")
-    
-    logger.info(f"Price update completed: {updated_count} updated, {failed_count} failed")
-    return updated_count, failed_count
-
-
-def generate_predictions_for_product(product):
-    """Generate ML predictions for a specific product."""
-    from .models import DemandPrediction
-    
-    try:
-        predictor = MLPredictor()
-        
-        linear_predictions = predictor.predict_linear_regression(product, days_ahead=7)
-        
-        prediction_count = 0
-        
-        for pred in linear_predictions:
-            demand_score = predictor.predict_demand(product)
-            
-            prediction, created = DemandPrediction.objects.update_or_create(
-                product=product,
-                prediction_date=pred['date'],
-                model_type=pred['model_type'],
-                defaults={
-                    'predicted_demand': demand_score,
-                    'predicted_price': pred['predicted_price'],
-                    'confidence_score': pred['confidence_score'],
-                    'model_version': '1.0'
-                }
-            )
-            
-            if created:
-                prediction_count += 1
-        
-        logger.info(f"Generated {prediction_count} predictions for {product.name}")
-        return prediction_count
-        
-    except Exception as e:
-        logger.error(f"Error generating predictions for {product.name}: {str(e)}")
-        return 0
-
-
-
 views.py
-
 
 """
 Django views for the Price Tracker application with all missing functions.
@@ -1652,8 +693,802 @@ def update_price_manual(request, product_id):
     return redirect('tracker:product_detail', pk=product_id)
 
 
-models.py
+utils.py
 
+"""
+Utility functions for the Price Tracker application.
+"""
+
+import requests
+import time
+import logging
+import re
+import io
+import base64
+import signal
+from datetime import datetime, timedelta
+from decimal import Decimal
+from typing import Optional, Dict, List, Tuple, Any
+import json
+
+# Web scraping imports
+from bs4 import BeautifulSoup
+from fake_useragent import UserAgent
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
+
+# Data processing imports
+import numpy as np
+import pandas as pd
+
+# Machine Learning imports
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error, r2_score
+
+# Prophet for time series forecasting
+try:
+    from prophet import Prophet
+    PROPHET_AVAILABLE = True
+except ImportError:
+    PROPHET_AVAILABLE = False
+    logging.warning("Prophet not available. Using simple regression models only.")
+
+# Visualization imports
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import seaborn as sns
+
+# Django imports
+from django.utils import timezone
+from django.conf import settings
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+# Configure matplotlib and seaborn
+plt.style.use('default')
+sns.set_palette("husl")
+plt.rcParams['figure.figsize'] = (12, 6)
+plt.rcParams['figure.dpi'] = 100
+plt.rcParams['font.size'] = 10
+
+
+class TimeoutError(Exception):
+    """Custom timeout error for scraping operations."""
+    pass
+
+
+def timeout_handler(signum, frame):
+    """Signal handler for timeout operations."""
+    raise TimeoutError("Operation timed out")
+
+
+class WebScraper:
+    """Enhanced web scraping utility class with fixed logging."""
+    
+    def __init__(self):
+        """Initialize the scraper with configuration and user agents."""
+        self.session = requests.Session()
+        
+        try:
+            self.ua = UserAgent()
+            self.user_agent = self.ua.random
+        except:
+            # Fallback user agent if fake-useragent fails
+            self.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        
+        self.session.headers.update({
+            'User-Agent': self.user_agent,
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+        })
+        
+        # Chrome options for Selenium
+        self.chrome_options = Options()
+        self.chrome_options.add_argument('--headless')
+        self.chrome_options.add_argument('--no-sandbox')
+        self.chrome_options.add_argument('--disable-dev-shm-usage')
+        self.chrome_options.add_argument('--disable-gpu')
+        self.chrome_options.add_argument('--disable-extensions')
+        self.chrome_options.add_argument('--disable-plugins')
+        self.chrome_options.add_argument('--disable-images')
+        self.chrome_options.add_argument('--window-size=1920,1080')
+        self.chrome_options.add_argument(f'--user-agent={self.user_agent}')
+    
+    def scrape_amazon_price(self, url: str) -> Optional[Decimal]:
+        """Scrape price from Amazon with timeout handling."""
+        try:
+            time.sleep(getattr(settings, 'SCRAPING_DELAY', 2))
+            response = self.session.get(url, timeout=20)
+            response.raise_for_status()
+            
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            price_selectors = [
+                'span.a-price-whole',
+                'span.a-offscreen',
+                'span.a-price span.a-offscreen',
+                'span#priceblock_ourprice',
+                'span#priceblock_dealprice',
+                'span.a-price.a-text-price.a-size-medium.apexPriceToPay',
+                'span.a-price-range',
+                '.a-price-whole',
+                '.a-offscreen',
+            ]
+            
+            for selector in price_selectors:
+                price_element = soup.select_one(selector)
+                if price_element:
+                    price_text = price_element.get_text().strip()
+                    price_clean = re.sub(r'[^\d.,]', '', price_text)
+                    price_match = re.search(r'[\d,]+\.?\d*', price_clean.replace(',', ''))
+                    if price_match:
+                        return Decimal(price_match.group())
+            
+            return self._scrape_with_selenium(url, 'amazon')
+            
+        except Exception as e:
+            logger.error(f"Error scraping Amazon price from {url}: {str(e)}")
+            return None
+    
+    def scrape_flipkart_price(self, url: str) -> Optional[Decimal]:
+        """Scrape price from Flipkart with timeout handling."""
+        try:
+            time.sleep(getattr(settings, 'SCRAPING_DELAY', 2))
+            response = self.session.get(url, timeout=20)
+            response.raise_for_status()
+            
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            price_selectors = [
+                'div._30jeq3._16Jk6d',
+                'div._1vC4OE._3qQ9m1',
+                'div._30jeq3',
+                'div._25b18c',
+                'div._1g0rzj',
+                '._30jeq3',
+                '._1vC4OE',
+            ]
+            
+            for selector in price_selectors:
+                price_element = soup.select_one(selector)
+                if price_element:
+                    price_text = price_element.get_text().strip()
+                    price_clean = re.sub(r'[^\d,]', '', price_text)
+                    price_match = re.search(r'[\d,]+', price_clean.replace(',', ''))
+                    if price_match:
+                        return Decimal(price_match.group())
+            
+            return self._scrape_with_selenium(url, 'flipkart')
+            
+        except Exception as e:
+            logger.error(f"Error scraping Flipkart price from {url}: {str(e)}")
+            return None
+    
+    def _scrape_with_selenium(self, url: str, site_type: str) -> Optional[Decimal]:
+        """Fallback scraping using Selenium with proper timeout handling."""
+        driver = None
+        try:
+            try:
+                from webdriver_manager.chrome import ChromeDriverManager
+                service = Service(ChromeDriverManager().install())
+                driver = webdriver.Chrome(service=service, options=self.chrome_options)
+            except:
+                driver = webdriver.Chrome(options=self.chrome_options)
+            
+            driver.set_page_load_timeout(30)
+            driver.implicitly_wait(10)
+            driver.get(url)
+            
+            wait = WebDriverWait(driver, 15)
+            
+            if site_type == 'amazon':
+                price_selectors = [
+                    "span.a-price-whole",
+                    "span.a-offscreen",
+                    "#priceblock_ourprice",
+                    ".a-price-whole",
+                    ".a-offscreen",
+                ]
+            else:  # flipkart
+                price_selectors = [
+                    "div._30jeq3._16Jk6d",
+                    "div._1vC4OE._3qQ9m1",
+                    "div._30jeq3",
+                    "._30jeq3",
+                    "._1vC4OE",
+                ]
+            
+            for selector in price_selectors:
+                try:
+                    price_element = wait.until(
+                        EC.presence_of_element_located((By.CSS_SELECTOR, selector))
+                    )
+                    price_text = price_element.text.strip()
+                    price_clean = re.sub(r'[^\d.,]', '', price_text)
+                    price_match = re.search(r'[\d,]+\.?\d*', price_clean.replace(',', ''))
+                    if price_match:
+                        return Decimal(price_match.group())
+                except (TimeoutException, NoSuchElementException):
+                    continue
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error with Selenium scraping for {url}: {str(e)}")
+            return None
+        finally:
+            if driver:
+                try:
+                    driver.quit()
+                except:
+                    pass
+    
+    def scrape_price(self, product) -> Tuple[Optional[Decimal], str]:
+        """Main method to scrape price with comprehensive error handling."""
+        from .models import ScrapingLog
+        
+        start_time = time.time()
+        
+        # FIXED: Remove user parameter since it doesn't exist in ScrapingLog model
+        log_entry = ScrapingLog.objects.create(
+            product=product,
+            status='failed',
+            started_at=timezone.now()
+        )
+        
+        try:
+            url = product.url.lower()
+            price = None
+            error_message = ""
+            
+            if 'amazon' in url:
+                price = self.scrape_amazon_price(product.url)
+                if not price:
+                    error_message = "Could not extract price from Amazon page"
+            elif 'flipkart' in url:
+                price = self.scrape_flipkart_price(product.url)
+                if not price:
+                    error_message = "Could not extract price from Flipkart page"
+            else:
+                error_message = "Unsupported e-commerce site"
+            
+            log_entry.status = 'success' if price else 'failed'
+            log_entry.scraped_price = price
+            log_entry.response_time = time.time() - start_time
+            log_entry.completed_at = timezone.now()
+            log_entry.error_message = error_message
+            log_entry.save()
+            
+            return price, log_entry.status
+            
+        except Exception as e:
+            log_entry.error_message = str(e)
+            log_entry.response_time = time.time() - start_time
+            log_entry.completed_at = timezone.now()
+            log_entry.save()
+            
+            logger.error(f"Error scraping price for {product.name}: {str(e)}")
+            return None, 'failed'
+
+
+class DataProcessor:
+    """Data processing utility class using Pandas and NumPy."""
+    
+    @staticmethod
+    def get_price_history_dataframe(product, days: int = 30) -> pd.DataFrame:
+        """Get price history as a Pandas DataFrame for analysis."""
+        from .models import PriceHistory
+        
+        end_date = timezone.now()
+        start_date = end_date - timedelta(days=days)
+        
+        history = PriceHistory.objects.filter(
+            product=product,
+            recorded_at__gte=start_date,
+            is_valid=True
+        ).order_by('recorded_at')
+        
+        if not history.exists():
+            return pd.DataFrame()
+        
+        data = []
+        for record in history:
+            data.append({
+                'date': record.recorded_at.date(),
+                'datetime': record.recorded_at,
+                'price': float(record.price),
+                'source': record.source
+            })
+        
+        df = pd.DataFrame(data)
+        if not df.empty:
+            df['datetime'] = pd.to_datetime(df['datetime'])
+            df.set_index('datetime', inplace=True)
+            df.sort_index(inplace=True)
+        
+        return df
+    
+    @staticmethod
+    def calculate_moving_averages(df: pd.DataFrame, windows: List[int] = [7, 14, 30]) -> pd.DataFrame:
+        """Calculate moving averages using Pandas."""
+        if df.empty:
+            return df
+        
+        result_df = df.copy()
+        
+        for window in windows:
+            if len(result_df) >= window:
+                result_df[f'ma_{window}'] = result_df['price'].rolling(
+                    window=window, min_periods=1
+                ).mean()
+        
+        return result_df
+    
+    @staticmethod
+    def calculate_price_statistics(df: pd.DataFrame) -> Dict[str, float]:
+        """Calculate comprehensive price statistics using NumPy."""
+        if df.empty or 'price' not in df.columns:
+            return {}
+        
+        prices = df['price'].values
+        
+        stats = {
+            'mean': np.mean(prices),
+            'median': np.median(prices),
+            'std': np.std(prices),
+            'min': np.min(prices),
+            'max': np.max(prices),
+            'range': np.max(prices) - np.min(prices),
+            'coefficient_of_variation': np.std(prices) / np.mean(prices) if np.mean(prices) > 0 else 0,
+        }
+        
+        if len(prices) > 1:
+            price_changes = np.diff(prices)
+            stats.update({
+                'volatility': np.std(price_changes),
+                'avg_daily_change': np.mean(price_changes),
+                'max_daily_increase': np.max(price_changes),
+                'max_daily_decrease': np.min(price_changes),
+            })
+        
+        return stats
+    
+    @staticmethod
+    def get_chart_data_json(product, days: int = 30) -> str:
+        """Get price history data formatted for Chart.js."""
+        df = DataProcessor.get_price_history_dataframe(product, days)
+        
+        if df.empty:
+            return json.dumps({'labels': [], 'prices': []})
+        
+        labels = [date.strftime('%Y-%m-%d') for date in df.index.date]
+        prices = df['price'].tolist()
+        
+        return json.dumps({
+            'labels': labels,
+            'prices': prices,
+            'product_name': product.name,
+            'currency': product.currency
+        })
+
+
+class MLPredictor:
+    """Machine Learning utility class for price and demand prediction."""
+    
+    def __init__(self):
+        """Initialize ML models and scalers."""
+        self.linear_model = LinearRegression()
+        self.rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
+        self.scaler = StandardScaler()
+    
+    def prepare_features(self, df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
+        """Prepare features for machine learning models."""
+        if df.empty or len(df) < 5:
+            return np.array([]), np.array([])
+        
+        df_features = df.copy()
+        df_features['price_lag_1'] = df_features['price'].shift(1)
+        df_features['price_lag_2'] = df_features['price'].shift(2)
+        df_features['price_lag_3'] = df_features['price'].shift(3)
+        
+        df_features['price_ma_3'] = df_features['price'].rolling(3).mean()
+        df_features['price_ma_7'] = df_features['price'].rolling(7).mean()
+        df_features['price_std_3'] = df_features['price'].rolling(3).std()
+        
+        df_features['day_of_week'] = df_features.index.dayofweek
+        df_features['day_of_month'] = df_features.index.day
+        df_features['month'] = df_features.index.month
+        
+        df_features = df_features.dropna()
+        
+        if len(df_features) < 3:
+            return np.array([]), np.array([])
+        
+        feature_columns = [
+            'price_lag_1', 'price_lag_2', 'price_lag_3',
+            'price_ma_3', 'price_ma_7', 'price_std_3',
+            'day_of_week', 'day_of_month', 'month'
+        ]
+        
+        X = df_features[feature_columns].values
+        y = df_features['price'].values
+        
+        return X, y
+    
+    def predict_linear_regression(self, product, days_ahead: int = 7) -> List[Dict]:
+        """Predict future prices using Linear Regression."""
+        try:
+            df = DataProcessor.get_price_history_dataframe(product, days=60)
+            if df.empty:
+                return []
+            
+            X, y = self.prepare_features(df)
+            if len(X) == 0:
+                return []
+            
+            X_scaled = self.scaler.fit_transform(X)
+            
+            if len(X_scaled) > 10:
+                X_train, X_test, y_train, y_test = train_test_split(
+                    X_scaled, y, test_size=0.2, random_state=42
+                )
+            else:
+                X_train, X_test, y_train, y_test = X_scaled, X_scaled, y, y
+            
+            self.linear_model.fit(X_train, y_train)
+            
+            if len(X_test) > 0:
+                y_pred_test = self.linear_model.predict(X_test)
+                r2 = r2_score(y_test, y_pred_test)
+                confidence = max(0, min(1, r2))
+            else:
+                confidence = 0.5
+            
+            predictions = []
+            current_price = float(df['price'].iloc[-1])
+            
+            for i in range(days_ahead):
+                if len(df) >= 3:
+                    recent_prices = df['price'].tail(3).values
+                    trend = np.mean(np.diff(recent_prices))
+                    pred_price = current_price + (trend * (i + 1))
+                else:
+                    pred_price = current_price
+                
+                pred_price = max(current_price * 0.5, min(current_price * 2.0, pred_price))
+                
+                prediction_date = timezone.now().date() + timedelta(days=i+1)
+                
+                predictions.append({
+                    'date': prediction_date,
+                    'predicted_price': round(pred_price, 2),
+                    'confidence_score': confidence,
+                    'model_type': 'linear_regression'
+                })
+            
+            return predictions
+            
+        except Exception as e:
+            logger.error(f"Error in linear regression prediction: {str(e)}")
+            return []
+    
+    def predict_demand(self, product) -> float:
+        """Predict demand score based on price trends and volatility."""
+        try:
+            df = DataProcessor.get_price_history_dataframe(product, days=30)
+            if df.empty:
+                return 0.5
+            
+            if len(df) >= 2:
+                price_trend = (df['price'].iloc[-1] - df['price'].iloc[0]) / df['price'].iloc
+                trend_factor = max(0, 1 - price_trend)
+            else:
+                trend_factor = 0.5
+            
+            if len(df) >= 3:
+                volatility = np.std(df['price']) / np.mean(df['price'])
+                volatility_factor = max(0, 1 - volatility)
+            else:
+                volatility_factor = 0.5
+            
+            demand_score = (trend_factor * 0.6 + volatility_factor * 0.4)
+            return max(0.1, min(0.9, demand_score))
+            
+        except Exception as e:
+            logger.error(f"Error predicting demand: {str(e)}")
+            return 0.5
+
+
+class ChartGenerator:
+    """Chart generation utility class using Matplotlib."""
+    
+    def __init__(self):
+        """Initialize chart styling."""
+        plt.style.use('default')
+        plt.rcParams['figure.figsize'] = (12, 6)
+        plt.rcParams['figure.dpi'] = 100
+        plt.rcParams['font.size'] = 10
+    
+    def generate_price_trend_chart(self, product) -> str:
+        """Generate a price trend chart using Matplotlib."""
+        try:
+            df = DataProcessor.get_price_history_dataframe(product, days=60)
+            if df.empty:
+                return self._create_no_data_chart("No price history available")
+            
+            fig, ax = plt.subplots(figsize=(12, 6))
+            
+            ax.plot(df.index, df['price'], linewidth=2, color='#2E86AB', label='Price', marker='o', markersize=3)
+            
+            df_with_ma = DataProcessor.calculate_moving_averages(df, [7, 14])
+            if 'ma_7' in df_with_ma.columns:
+                ax.plot(df_with_ma.index, df_with_ma['ma_7'], 
+                       linewidth=1, color='#A23B72', alpha=0.7, label='7-day MA')
+            if 'ma_14' in df_with_ma.columns:
+                ax.plot(df_with_ma.index, df_with_ma['ma_14'], 
+                       linewidth=1, color='#F18F01', alpha=0.7, label='14-day MA')
+            
+            if product.alert_threshold:
+                ax.axhline(y=float(product.alert_threshold), color='red', 
+                          linestyle='--', alpha=0.5, label='Alert Threshold')
+            
+            ax.set_title(f'Price Trend - {product.name}', fontsize=14, fontweight='bold')
+            ax.set_xlabel('Date')
+            ax.set_ylabel(f'Price ({product.currency})')
+            ax.legend()
+            ax.grid(True, alpha=0.3)
+            
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
+            ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
+            plt.xticks(rotation=45)
+            
+            plt.tight_layout()
+            return self._fig_to_base64(fig)
+            
+        except Exception as e:
+            logger.error(f"Error generating price trend chart: {str(e)}")
+            return self._create_error_chart("Error generating chart")
+    
+    def _fig_to_base64(self, fig) -> str:
+        """Convert matplotlib figure to base64 string for web display."""
+        buffer = io.BytesIO()
+        fig.savefig(buffer, format='png', bbox_inches='tight', dpi=100)
+        buffer.seek(0)
+        image_png = buffer.getvalue()
+        buffer.close()
+        plt.close(fig)  # Important: close figure to free memory
+        
+        graphic = base64.b64encode(image_png)
+        return graphic.decode('utf-8')
+    
+    def _create_no_data_chart(self, message: str) -> str:
+        """Create a simple chart showing no data message."""
+        fig, ax = plt.subplots(figsize=(8, 4))
+        ax.text(0.5, 0.5, message, ha='center', va='center', fontsize=14)
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.axis('off')
+        return self._fig_to_base64(fig)
+    
+    def _create_error_chart(self, message: str) -> str:
+        """Create a simple chart showing error message."""
+        fig, ax = plt.subplots(figsize=(8, 4))
+        ax.text(0.5, 0.5, message, ha='center', va='center', fontsize=14, color='red')
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.axis('off')
+        return self._fig_to_base64(fig)
+
+
+# Utility functions
+def calculate_price_change_percentage(product, days: int = 30) -> Optional[float]:
+    """Calculate the percentage change in price over a specified period."""
+    try:
+        df = DataProcessor.get_price_history_dataframe(product, days)
+        
+        if df.empty or len(df) < 2:
+            return None
+        
+        current_price = df['price'].iloc[-1]
+        past_price = df['price'].iloc[0]
+        
+        if past_price == 0:
+            return None
+        
+        return ((current_price - past_price) / past_price) * 100
+        
+    except Exception as e:
+        logger.error(f"Error calculating price change: {str(e)}")
+        return None
+
+
+def check_alert_conditions(alert) -> bool:
+    """Check if alert conditions are met and trigger notifications."""
+    if alert.status != 'active':
+        return False
+    
+    product = alert.product
+    
+    if not product.current_price:
+        return False
+    
+    current_price = float(product.current_price)
+    threshold = float(alert.threshold_value)
+    
+    triggered = False
+    
+    if alert.alert_type == 'price_drop' and current_price <= threshold:
+        triggered = True
+    elif alert.alert_type == 'price_increase' and current_price >= threshold:
+        triggered = True
+    
+    if triggered:
+        alert.status = 'triggered'
+        alert.triggered_at = timezone.now()
+        alert.save()
+        
+        send_alert_notification(alert)
+        
+        logger.info(f"Alert triggered for {product.name}: {alert.alert_type}")
+        return True
+    
+    return False
+
+
+def send_alert_notification(alert):
+    """Send alert notifications via email."""
+    product = alert.product
+    user = alert.user
+    
+    try:
+        subject = f'Price Alert: {product.name}'
+        
+        context = {
+            'user': user,
+            'product': product,
+            'alert': alert,
+            'current_price': product.current_price,
+            'threshold': alert.threshold_value,
+            'price_url': product.url,
+        }
+        
+        try:
+            html_message = render_to_string('tracker/email/price_alert.html', context)
+            plain_message = strip_tags(html_message)
+        except:
+            plain_message = f"""
+            Hello {user.first_name or user.username},
+            
+            Your price alert for "{product.name}" has been triggered!
+            
+            Alert Type: {alert.get_alert_type_display()}
+            Current Price: {product.current_price} {product.currency}
+            Your Threshold: {alert.threshold_value} {product.currency}
+            
+            View product: {product.url}
+            
+            Best regards,
+            Price Tracker Team
+            """
+            html_message = None
+        
+        if alert.email_notification and user.email:
+            send_mail(
+                subject=subject,
+                message=plain_message,
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@example.com'),
+                recipient_list=[user.email],
+                html_message=html_message,
+                fail_silently=False,
+            )
+            logger.info(f"Alert email sent to {user.email} for product {product.name}")
+            
+    except Exception as e:
+        logger.error(f"Failed to send alert notification: {str(e)}")
+
+
+def update_product_prices():
+    """Update prices for all active products."""
+    from .models import Product, PriceHistory
+    
+    scraper = WebScraper()
+    active_products = Product.objects.filter(is_active=True)
+    
+    updated_count = 0
+    failed_count = 0
+    
+    logger.info(f"Starting price update for {active_products.count()} products")
+    
+    for product in active_products:
+        try:
+            price, status = scraper.scrape_price(product)
+            
+            if price and status == 'success':
+                old_price = product.current_price
+                product.current_price = price
+                product.last_scraped = timezone.now()
+                product.save()
+                
+                PriceHistory.objects.create(
+                    product=product,
+                    price=price,
+                    currency=product.currency,
+                    source='automated_scraper'
+                )
+                
+                updated_count += 1
+                logger.info(f"Updated price for {product.name}: {old_price} -> {price}")
+                
+                for alert in product.alerts.filter(status='active'):
+                    check_alert_conditions(alert)
+                    
+            else:
+                failed_count += 1
+                logger.warning(f"Failed to update price for {product.name}")
+                
+        except Exception as e:
+            failed_count += 1
+            logger.error(f"Error updating price for {product.name}: {str(e)}")
+    
+    logger.info(f"Price update completed: {updated_count} updated, {failed_count} failed")
+    return updated_count, failed_count
+
+
+def generate_predictions_for_product(product):
+    """Generate ML predictions for a specific product."""
+    from .models import DemandPrediction
+    
+    try:
+        predictor = MLPredictor()
+        
+        linear_predictions = predictor.predict_linear_regression(product, days_ahead=7)
+        
+        prediction_count = 0
+        
+        for pred in linear_predictions:
+            demand_score = predictor.predict_demand(product)
+            
+            prediction, created = DemandPrediction.objects.update_or_create(
+                product=product,
+                prediction_date=pred['date'],
+                model_type=pred['model_type'],
+                defaults={
+                    'predicted_demand': demand_score,
+                    'predicted_price': pred['predicted_price'],
+                    'confidence_score': pred['confidence_score'],
+                    'model_version': '1.0'
+                }
+            )
+            
+            if created:
+                prediction_count += 1
+        
+        logger.info(f"Generated {prediction_count} predictions for {product.name}")
+        return prediction_count
+        
+    except Exception as e:
+        logger.error(f"Error generating predictions for {product.name}: {str(e)}")
+        return 0
+
+
+models.py
 
 """
 Django models for the Price Tracker application.
@@ -1895,6 +1730,14 @@ class ScrapingLog(models.Model):
     response_time = models.FloatField(null=True, blank=True, help_text="Response time in seconds")
     retry_count = models.IntegerField(default=0)
     
+    # ADD THESE MISSING FIELDS:
+    user_agent_used = models.CharField(
+        max_length=500, 
+        default='Mozilla/5.0 (compatible; PriceTrackerBot/1.0)', 
+        help_text="User agent string used for scraping"
+    )
+    url = models.URLField(blank=True, default='', help_text="URL that was scraped")
+    
     # Timestamps
     started_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
@@ -1914,3 +1757,2210 @@ class ScrapingLog(models.Model):
             return (self.completed_at - self.started_at).total_seconds()
         return None
 
+
+export.html code 
+
+{% extends 'tracker/base.html' %}
+
+{% block title %}Export Data - Price Tracker{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-gradient text-white" style="background: var(--gradient-primary);">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <i class="fas fa-download fa-2x"></i>
+                    </div>
+                    <div>
+                        <h4 class="mb-1">Export Your Data</h4>
+                        <p class="mb-0 opacity-90">Download your price tracking data in various formats</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <!-- Export Options -->
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title text-primary mb-3">
+                                        <i class="fas fa-cog me-2"></i>Export Options
+                                    </h5>
+                                    
+                                    <div class="mb-3">
+                                        <label for="{{ form.export_format.id_for_label }}" class="form-label fw-bold">
+                                            <i class="fas fa-file-export me-2"></i>Export Format
+                                        </label>
+                                        {{ form.export_format }}
+                                        {% if form.export_format.errors %}
+                                            <div class="text-danger mt-2">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                                {{ form.export_format.errors }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">
+                                            <i class="fas fa-calendar-alt me-2"></i>Date Range
+                                        </label>
+                                        <div class="btn-group d-grid" role="group">
+                                            <input type="radio" class="btn-check" name="date_range" id="last_30" value="30" checked>
+                                            <label class="btn btn-outline-primary" for="last_30">Last 30 Days</label>
+                                            
+                                            <input type="radio" class="btn-check" name="date_range" id="last_90" value="90">
+                                            <label class="btn btn-outline-primary" for="last_90">Last 90 Days</label>
+                                            
+                                            <input type="radio" class="btn-check" name="date_range" id="all_time" value="all">
+                                            <label class="btn btn-outline-primary" for="all_time">All Time</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Data Selection -->
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title text-primary mb-3">
+                                        <i class="fas fa-database me-2"></i>Data Selection
+                                    </h5>
+                                    
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch form-check-lg">
+                                            <input class="form-check-input" type="checkbox" id="include_products" checked>
+                                            <label class="form-check-label fw-bold" for="include_products">
+                                                <i class="fas fa-box me-2"></i>Products
+                                            </label>
+                                            <small class="d-block text-muted">Basic product information and current prices</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch form-check-lg">
+                                            <input class="form-check-input" type="checkbox" id="include_history" checked>
+                                            <label class="form-check-label fw-bold" for="include_history">
+                                                <i class="fas fa-history me-2"></i>Price History
+                                            </label>
+                                            <small class="d-block text-muted">Historical price data and trends</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch form-check-lg">
+                                            <input class="form-check-input" type="checkbox" id="include_alerts">
+                                            <label class="form-check-label fw-bold" for="include_alerts">
+                                                <i class="fas fa-bell me-2"></i>Alerts
+                                            </label>
+                                            <small class="d-block text-muted">Price alert configurations and history</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch form-check-lg">
+                                            <input class="form-check-input" type="checkbox" id="include_predictions">
+                                            <label class="form-check-label fw-bold" for="include_predictions">
+                                                <i class="fas fa-chart-line me-2"></i>Predictions
+                                            </label>
+                                            <small class="d-block text-muted">ML-generated price predictions</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Export Preview -->
+                    <div class="card border-0 bg-info bg-opacity-10 mt-4">
+                        <div class="card-body">
+                            <h6 class="card-title text-info">
+                                <i class="fas fa-eye me-2"></i>Export Preview
+                            </h6>
+                            <div class="row text-center">
+                                <div class="col-md-3">
+                                    <div class="mb-2">
+                                        <i class="fas fa-box fa-2x text-primary"></i>
+                                    </div>
+                                    <div class="fw-bold" id="product-count">{{ products.count }}</div>
+                                    <small class="text-muted">Products</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-2">
+                                        <i class="fas fa-history fa-2x text-success"></i>
+                                    </div>
+                                    <div class="fw-bold" id="history-count">~{{ products.count|mul:30 }}</div>
+                                    <small class="text-muted">Price Records</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-2">
+                                        <i class="fas fa-bell fa-2x text-warning"></i>
+                                    </div>
+                                    <div class="fw-bold" id="alert-count">{{ user.alerts.count }}</div>
+                                    <small class="text-muted">Alerts</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-2">
+                                        <i class="fas fa-chart-line fa-2x text-info"></i>
+                                    </div>
+                                    <div class="fw-bold" id="prediction-count">{{ user.demand_predictions.count|default:0 }}</div>
+                                    <small class="text-muted">Predictions</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 pt-3 border-top">
+                        <a href="{% url 'tracker:dashboard' %}" class="btn btn-outline-secondary mb-2 mb-md-0">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                        </a>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-info" onclick="previewData()">
+                                <i class="fas fa-eye me-2"></i>Preview
+                            </button>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-download me-2"></i>Export Data
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Export Information -->
+                {% if export_info %}
+                <div class="alert alert-success border-0 shadow-sm mt-4">
+                    <h6 class="alert-heading">
+                        <i class="fas fa-check-circle me-2"></i>Export Complete
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <strong>Records:</strong> {{ export_info.record_count }}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>File Size:</strong> {{ export_info.file_size }}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Generated:</strong> {{ export_info.generated_at|date:"M d, Y H:i" }}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Help Section -->
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-body">
+                <h6 class="card-title text-primary">
+                    <i class="fas fa-question-circle me-2"></i>Export Help
+                </h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>File Formats</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-file-csv text-success me-2"></i><strong>CSV:</strong> Excel-compatible format</li>
+                            <li><i class="fas fa-file-code text-info me-2"></i><strong>JSON:</strong> Developer-friendly format</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Data Privacy</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-shield-alt text-success me-2"></i>Your data is secure</li>
+                            <li><i class="fas fa-user-lock text-info me-2"></i>Only your data is exported</li>
+                            <li><i class="fas fa-trash text-warning me-2"></i>Files auto-delete after download</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function previewData() {
+    const selectedOptions = {
+        format: document.querySelector('[name="export_format"]').value,
+        dateRange: document.querySelector('[name="date_range"]:checked').value,
+        includeProducts: document.querySelector('#include_products').checked,
+        includeHistory: document.querySelector('#include_history').checked,
+        includeAlerts: document.querySelector('#include_alerts').checked,
+        includePredictions: document.querySelector('#include_predictions').checked
+    };
+    
+    // Show preview modal
+    const modal = new bootstrap.Modal(document.getElementById('previewModal') || createPreviewModal());
+    modal.show();
+    
+    // Update preview content
+    updatePreviewContent(selectedOptions);
+}
+
+function createPreviewModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'previewModal';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-eye me-2"></i>Export Preview
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="previewContent">
+                    <!-- Preview content will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Close
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="document.querySelector('form').submit()">
+                        <i class="fas fa-download me-1"></i>Proceed with Export
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    return modal;
+}
+
+function updatePreviewContent(options) {
+    const content = document.getElementById('previewContent');
+    content.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading preview...</span>
+            </div>
+            <p class="mt-2">Generating preview...</p>
+        </div>
+    `;
+    
+    // Simulate preview generation
+    setTimeout(() => {
+        content.innerHTML = `
+            <div class="alert alert-info border-0">
+                <h6><i class="fas fa-info-circle me-2"></i>Export Configuration</h6>
+                <ul class="mb-0">
+                    <li><strong>Format:</strong> ${options.format.toUpperCase()}</li>
+                    <li><strong>Date Range:</strong> ${options.dateRange === 'all' ? 'All Time' : 'Last ' + options.dateRange + ' Days'}</li>
+                    <li><strong>Include Products:</strong> ${options.includeProducts ? 'Yes' : 'No'}</li>
+                    <li><strong>Include History:</strong> ${options.includeHistory ? 'Yes' : 'No'}</li>
+                    <li><strong>Include Alerts:</strong> ${options.includeAlerts ? 'Yes' : 'No'}</li>
+                    <li><strong>Include Predictions:</strong> ${options.includePredictions ? 'Yes' : 'No'}</li>
+                </ul>
+            </div>
+            
+            <div class="row text-center">
+                <div class="col-md-6">
+                    <div class="card border-primary">
+                        <div class="card-body">
+                            <i class="fas fa-file fa-3x text-primary mb-2"></i>
+                            <h5>Estimated File Size</h5>
+                            <p class="text-muted">~2.5 MB</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-success">
+                        <div class="card-body">
+                            <i class="fas fa-clock fa-3x text-success mb-2"></i>
+                            <h5>Generation Time</h5>
+                            <p class="text-muted">~10 seconds</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }, 1000);
+}
+
+// Form submission with loading state
+document.querySelector('form').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating Export...';
+    submitBtn.disabled = true;
+    
+    // Show progress indicator
+    const progressModal = createProgressModal();
+    const modal = new bootstrap.Modal(progressModal);
+    modal.show();
+    
+    // Re-enable button after 30 seconds (fallback)
+    setTimeout(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+        modal.hide();
+    }, 30000);
+});
+
+function createProgressModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-download fa-3x text-primary"></i>
+                    </div>
+                    <h5>Generating Your Export</h5>
+                    <p class="text-muted">Please wait while we prepare your data...</p>
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             style="width: 100%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    return modal;
+}
+</script>
+{% endblock %}
+
+
+export.html error: "
+TemplateSyntaxError at /export/
+
+Invalid filter: 'mul'
+
+Request Method: 	GET
+Request URL: 	http://127.0.0.1:8000/export/
+Django Version: 	4.2.7
+Exception Type: 	TemplateSyntaxError
+Exception Value: 	
+
+Invalid filter: 'mul'
+
+Exception Location: 	C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\template\base.py, line 606, in find_filter
+Raised during: 	tracker.views.export_data
+Python Executable: 	C:\Users\trive\AppData\Local\Programs\Python\Python312\python.exe
+Python Version: 	3.12.2
+Python Path: 	
+
+['C:\\Users\\trive\\Desktop\\Price  Tracker with Demand Prediction',
+ 'C:\\Users\\trive\\AppData\\Local\\Programs\\Python\\Python312\\python312.zip',
+ 'C:\\Users\\trive\\AppData\\Local\\Programs\\Python\\Python312\\DLLs',
+ 'C:\\Users\\trive\\AppData\\Local\\Programs\\Python\\Python312\\Lib',
+ 'C:\\Users\\trive\\AppData\\Local\\Programs\\Python\\Python312',
+ 'C:\\Users\\trive\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages',
+ 'C:\\Users\\trive\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\win32',
+ 'C:\\Users\\trive\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\win32\\lib',
+ 'C:\\Users\\trive\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\Pythonwin']
+
+Server time: 	Thu, 21 Aug 2025 13:18:47 +0000
+Error during template rendering
+
+In template C:\Users\trive\Desktop\Price  Tracker with Demand Prediction\tracker\templates\tracker\export.html, error at line 136
+Invalid filter: 'mul'
+126 	                                    <div class="mb-2">
+127 	                                        <i class="fas fa-box fa-2x text-primary"></i>
+128 	                                    </div>
+129 	                                    <div class="fw-bold" id="product-count">{{ products.count }}</div>
+130 	                                    <small class="text-muted">Products</small>
+131 	                                </div>
+132 	                                <div class="col-md-3">
+133 	                                    <div class="mb-2">
+134 	                                        <i class="fas fa-history fa-2x text-success"></i>
+135 	                                    </div>
+136 	                                    <div class="fw-bold" id="history-count">~{{ products.count|mul:30 }}</div>
+137 	                                    <small class="text-muted">Price Records</small>
+138 	                                </div>
+139 	                                <div class="col-md-3">
+140 	                                    <div class="mb-2">
+141 	                                        <i class="fas fa-bell fa-2x text-warning"></i>
+142 	                                    </div>
+143 	                                    <div class="fw-bold" id="alert-count">{{ user.alerts.count }}</div>
+144 	                                    <small class="text-muted">Alerts</small>
+145 	                                </div>
+146 	                                <div class="col-md-3">
+Traceback Switch to copy-and-paste view
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\core\handlers\exception.py, line 55, in inner
+
+                        response = get_response(request)
+                                       ^^^^^^^^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    	
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\core\handlers\base.py, line 197, in _get_response
+
+                        response = wrapped_callback(request, *callback_args, **callback_kwargs)
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\contrib\auth\decorators.py, line 23, in _wrapper_view
+
+                        return view_func(request, *args, **kwargs)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    C:\Users\trive\Desktop\Price  Tracker with Demand Prediction\tracker\views.py, line 515, in export_data
+
+            return render(request, 'tracker/export.html', {'form': form})
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\shortcuts.py, line 24, in render
+
+            content = loader.render_to_string(template_name, context, request, using=using)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\template\loader.py, line 61, in render_to_string
+
+                template = get_template(template_name, using=using)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    	
+
+    	
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\template\loader.py, line 15, in get_template
+
+                    return engine.get_template(template_name)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\template\backends\django.py, line 33, in get_template
+
+                    return Template(self.engine.get_template(template_name), self)
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\template\engine.py, line 175, in get_template
+
+                template, origin = self.find_template(template_name)
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\template\engine.py, line 157, in find_template
+
+                        template = loader.get_template(name, skip=skip)
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\template\loaders\cached.py, line 57, in get_template
+
+                    template = super().get_template(template_name, skip)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\template\loaders\base.py, line 28, in get_template
+
+                        return Template(
+                                   
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\template\base.py, line 154, in __init__
+
+                self.nodelist = self.compile_nodelist()
+                                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\template\base.py, line 200, in compile_nodelist
+
+                    return parser.parse()
+                                ^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    	
+
+    	
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\template\base.py, line 513, in parse
+
+                            raise self.error(token, e)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\template\base.py, line 511, in parse
+
+                            compiled_result = compile_func(self, token)
+                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\template\loader_tags.py, line 293, in do_extends
+
+            nodelist = parser.parse()
+                            ^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    	
+
+    	
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\template\base.py, line 513, in parse
+
+                            raise self.error(token, e)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\template\base.py, line 511, in parse
+
+                            compiled_result = compile_func(self, token)
+                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\template\loader_tags.py, line 232, in do_block
+
+            nodelist = parser.parse(("endblock",))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    	
+
+    	
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\template\base.py, line 484, in parse
+
+                            raise self.error(token, e)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\template\base.py, line 482, in parse
+
+                            filter_expression = self.compile_filter(token.contents)
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\template\base.py, line 600, in compile_filter
+
+                return FilterExpression(token, self)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\template\base.py, line 698, in __init__
+
+                        filter_func = parser.find_filter(filter_name)
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    	
+
+    C:\Users\trive\AppData\Local\Programs\Python\Python312\Lib\site-packages\django\template\base.py, line 606, in find_filter
+
+                    raise TemplateSyntaxError("Invalid filter: '%s'" % filter_name)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+         …
+    Local vars
+    	
+    	
+
+    	
+
+Request information
+USER
+
+shloktest
+GET
+
+No GET data
+POST
+
+No POST data
+FILES
+
+No FILES data
+COOKIES
+Variable 	Value
+csrftoken 	
+
+'********************'
+
+sessionid 	
+
+'********************'
+
+META
+Variable 	Value
+ALLUSERSPROFILE 	
+
+'C:\\ProgramData'
+
+APPDATA 	
+
+'C:\\Users\\trive\\AppData\\Roaming'
+
+BUNDLED_DEBUGPY_PATH 	
+
+'c:\\Users\\trive\\.vscode\\extensions\\ms-python.debugpy-2025.10.0-win32-x64\\bundled\\libs\\debugpy'
+
+CHROME_CRASHPAD_PIPE_NAME 	
+
+'\\\\.\\pipe\\crashpad_13180_WQEMXTWZSGANIEXY'
+
+COLORTERM 	
+
+'truecolor'
+
+COMMONPROGRAMFILES 	
+
+'C:\\Program Files\\Common Files'
+
+COMMONPROGRAMFILES(X86) 	
+
+'C:\\Program Files (x86)\\Common Files'
+
+COMMONPROGRAMW6432 	
+
+'C:\\Program Files\\Common Files'
+
+COMPUTERNAME 	
+
+'SHLOK'
+
+COMSPEC 	
+
+'C:\\WINDOWS\\system32\\cmd.exe'
+
+CONTENT_LENGTH 	
+
+''
+
+CONTENT_TYPE 	
+
+'text/plain'
+
+CSRF_COOKIE 	
+
+'MEZdggnRSuTpu9DADza5PDRYkl9YASVS'
+
+DJANGO_SETTINGS_MODULE 	
+
+'price_tracker.settings'
+
+DRIVERDATA 	
+
+'C:\\Windows\\System32\\Drivers\\DriverData'
+
+EFC_10032_1262719628 	
+
+'1'
+
+EFC_10032_1592913036 	
+
+'1'
+
+EFC_10032_2283032206 	
+
+'1'
+
+EFC_10032_2775293581 	
+
+'1'
+
+EFC_10032_3789132940 	
+
+'1'
+
+FPS_BROWSER_APP_PROFILE_STRING 	
+
+'Internet Explorer'
+
+FPS_BROWSER_USER_PROFILE_STRING 	
+
+'Default'
+
+GATEWAY_INTERFACE 	
+
+'CGI/1.1'
+
+GIT_ASKPASS 	
+
+'********************'
+
+HOMEDRIVE 	
+
+'C:'
+
+HOMEPATH 	
+
+'\\Users\\trive'
+
+HTTP_ACCEPT 	
+
+'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+
+HTTP_ACCEPT_ENCODING 	
+
+'gzip, deflate, br, zstd'
+
+HTTP_ACCEPT_LANGUAGE 	
+
+'en-US,en;q=0.5'
+
+HTTP_CONNECTION 	
+
+'keep-alive'
+
+HTTP_COOKIE 	
+
+'********************'
+
+HTTP_HOST 	
+
+'127.0.0.1:8000'
+
+HTTP_PRIORITY 	
+
+'u=0, i'
+
+HTTP_REFERER 	
+
+'http://127.0.0.1:8000/profile/'
+
+HTTP_SEC_FETCH_DEST 	
+
+'document'
+
+HTTP_SEC_FETCH_MODE 	
+
+'navigate'
+
+HTTP_SEC_FETCH_SITE 	
+
+'same-origin'
+
+HTTP_SEC_FETCH_USER 	
+
+'?1'
+
+HTTP_UPGRADE_INSECURE_REQUESTS 	
+
+'1'
+
+HTTP_USER_AGENT 	
+
+('Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 '
+ 'Firefox/142.0')
+
+INTELLIJ IDEA COMMUNITY EDITION 	
+
+'C:\\Program Files\\JetBrains\\IntelliJ IDEA Community Edition 2023.2.4\\bin;'
+
+LANG 	
+
+'en_US.UTF-8'
+
+LOCALAPPDATA 	
+
+'C:\\Users\\trive\\AppData\\Local'
+
+LOGONSERVER 	
+
+'\\\\SHLOK'
+
+MONGODB 	
+
+'C:\\Users\\trive\\mongosh'
+
+NUMBER_OF_PROCESSORS 	
+
+'8'
+
+ONEDRIVE 	
+
+'C:\\Users\\trive\\OneDrive'
+
+ONEDRIVECONSUMER 	
+
+'C:\\Users\\trive\\OneDrive'
+
+ONLINESERVICES 	
+
+'Online Services'
+
+ORIGINAL_XDG_CURRENT_DESKTOP 	
+
+'undefined'
+
+OS 	
+
+'Windows_NT'
+
+PATH 	
+
+('C:\\Program Files\\Common '
+ 'Files\\Oracle\\Java\\javapath;C:\\windows\\system32;C:\\windows;C:\\windows\\System32\\Wbem;C:\\windows\\System32\\WindowsPowerShell\\v1.0\\;C:\\windows\\System32\\OpenSSH\\;C:\\Program '
+ 'Files\\HP\\HP One Agent;C:\\Program '
+ 'Files\\WindowsPowerShell\\Scripts\\HP.ClientScriptLibrary;C:\\Program '
+ 'Files\\nodejs\\;C:\\Program '
+ 'Files\\Git\\cmd;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\WINDOWS\\System32\\OpenSSH\\;C:\\Program '
+ 'Files\\MongoDB\\Server\\8.0\\bin;C:\\Users\\trive\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\;C:\\Users\\trive\\AppData\\Local\\Programs\\Python\\Python312\\;C:\\Users\\trive\\AppData\\Local\\Microsoft\\WindowsApps;;C:\\Program '
+ 'Files\\JetBrains\\IntelliJ IDEA Community Edition '
+ '2023.2.4\\bin;;C:\\Users\\trive\\AppData\\Local\\Programs\\Microsoft VS '
+ 'Code\\bin;C:\\Users\\trive\\AppData\\Roaming\\npm;C:\\Users\\trive\\mongosh\\;C:\\Users\\trive\\Downloads\\cursor\\resources\\app\\bin;c:\\Users\\trive\\.vscode\\extensions\\ms-python.debugpy-2025.10.0-win32-x64\\bundled\\scripts\\noConfigScripts;c:\\Users\\trive\\AppData\\Roaming\\Code\\User\\globalStorage\\github.copilot-chat\\debugCommand')
+
+PATHEXT 	
+
+'.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC;.CPL'
+
+PATH_INFO 	
+
+'/export/'
+
+PLATFORMCODE 	
+
+'KV'
+
+PROCESSOR_ARCHITECTURE 	
+
+'AMD64'
+
+PROCESSOR_IDENTIFIER 	
+
+'Intel64 Family 6 Model 154 Stepping 4, GenuineIntel'
+
+PROCESSOR_LEVEL 	
+
+'6'
+
+PROCESSOR_REVISION 	
+
+'9a04'
+
+PROGRAMDATA 	
+
+'C:\\ProgramData'
+
+PROGRAMFILES 	
+
+'C:\\Program Files'
+
+PROGRAMFILES(X86) 	
+
+'C:\\Program Files (x86)'
+
+PROGRAMW6432 	
+
+'C:\\Program Files'
+
+PSMODULEPATH 	
+
+('C:\\Users\\trive\\Documents\\WindowsPowerShell\\Modules;C:\\Program '
+ 'Files\\WindowsPowerShell\\Modules;C:\\WINDOWS\\system32\\WindowsPowerShell\\v1.0\\Modules')
+
+PUBLIC 	
+
+'C:\\Users\\Public'
+
+PYDEVD_DISABLE_FILE_VALIDATION 	
+
+'1'
+
+QUERY_STRING 	
+
+''
+
+REGIONCODE 	
+
+'APJ'
+
+REMOTE_ADDR 	
+
+'127.0.0.1'
+
+REMOTE_HOST 	
+
+''
+
+REQUEST_METHOD 	
+
+'GET'
+
+RUN_MAIN 	
+
+'true'
+
+SCRIPT_NAME 	
+
+''
+
+SERVER_NAME 	
+
+'Shlok'
+
+SERVER_PORT 	
+
+'8000'
+
+SERVER_PROTOCOL 	
+
+'HTTP/1.1'
+
+SERVER_SOFTWARE 	
+
+'WSGIServer/0.2'
+
+SESSIONNAME 	
+
+'Console'
+
+SYSTEMDRIVE 	
+
+'C:'
+
+SYSTEMROOT 	
+
+'C:\\WINDOWS'
+
+TEMP 	
+
+'C:\\Users\\trive\\AppData\\Local\\Temp'
+
+TERM_PROGRAM 	
+
+'vscode'
+
+TERM_PROGRAM_VERSION 	
+
+'1.103.1'
+
+TMP 	
+
+'C:\\Users\\trive\\AppData\\Local\\Temp'
+
+USERDOMAIN 	
+
+'SHLOK'
+
+USERDOMAIN_ROAMINGPROFILE 	
+
+'SHLOK'
+
+USERNAME 	
+
+'trive'
+
+USERPROFILE 	
+
+'C:\\Users\\trive'
+
+VSCODE_DEBUGPY_ADAPTER_ENDPOINTS 	
+
+'c:\\Users\\trive\\.vscode\\extensions\\ms-python.debugpy-2025.10.0-win32-x64\\.noConfigDebugAdapterEndpoints\\endpoint-a63b6cb427d1207e.txt'
+
+VSCODE_GIT_ASKPASS_EXTRA_ARGS 	
+
+'********************'
+
+VSCODE_GIT_ASKPASS_MAIN 	
+
+'********************'
+
+VSCODE_GIT_ASKPASS_NODE 	
+
+'********************'
+
+VSCODE_GIT_IPC_HANDLE 	
+
+'\\\\.\\pipe\\vscode-git-f2ca62e4f9-sock'
+
+VSCODE_INJECTION 	
+
+'1'
+
+WINDIR 	
+
+'C:\\WINDOWS'
+
+ZES_ENABLE_SYSMAN 	
+
+'1'
+
+wsgi.errors 	
+
+<_io.TextIOWrapper name='<stderr>' mode='w' encoding='utf-8'>
+
+wsgi.file_wrapper 	
+
+<class 'wsgiref.util.FileWrapper'>
+
+wsgi.input 	
+
+<django.core.handlers.wsgi.LimitedStream object at 0x0000016C0F724970>
+
+wsgi.multiprocess 	
+
+False
+
+wsgi.multithread 	
+
+True
+
+wsgi.run_once 	
+
+False
+
+wsgi.url_scheme 	
+
+'http'
+
+wsgi.version 	
+
+(1, 0)
+
+Settings
+Using settings module price_tracker.settings
+Setting 	Value
+ABSOLUTE_URL_OVERRIDES 	
+
+{}
+
+ADMINS 	
+
+[]
+
+ALLOWED_HOSTS 	
+
+['127.0.0.1', 'localhost']
+
+APPEND_SLASH 	
+
+True
+
+AUTHENTICATION_BACKENDS 	
+
+['django.contrib.auth.backends.ModelBackend']
+
+AUTH_PASSWORD_VALIDATORS 	
+
+'********************'
+
+AUTH_USER_MODEL 	
+
+'auth.User'
+
+BASE_DIR 	
+
+WindowsPath('C:/Users/trive/Desktop/Price  Tracker with Demand Prediction')
+
+CACHES 	
+
+{'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}}
+
+CACHE_MIDDLEWARE_ALIAS 	
+
+'default'
+
+CACHE_MIDDLEWARE_KEY_PREFIX 	
+
+'********************'
+
+CACHE_MIDDLEWARE_SECONDS 	
+
+600
+
+CELERY_ACCEPT_CONTENT 	
+
+['json']
+
+CELERY_BROKER_URL 	
+
+'redis://localhost:6379/0'
+
+CELERY_RESULT_BACKEND 	
+
+'redis://localhost:6379/0'
+
+CELERY_RESULT_SERIALIZER 	
+
+'json'
+
+CELERY_TASK_SERIALIZER 	
+
+'json'
+
+CELERY_TIMEZONE 	
+
+'UTC'
+
+CSRF_COOKIE_AGE 	
+
+31449600
+
+CSRF_COOKIE_DOMAIN 	
+
+None
+
+CSRF_COOKIE_HTTPONLY 	
+
+False
+
+CSRF_COOKIE_MASKED 	
+
+False
+
+CSRF_COOKIE_NAME 	
+
+'csrftoken'
+
+CSRF_COOKIE_PATH 	
+
+'/'
+
+CSRF_COOKIE_SAMESITE 	
+
+'Lax'
+
+CSRF_COOKIE_SECURE 	
+
+False
+
+CSRF_FAILURE_VIEW 	
+
+'django.views.csrf.csrf_failure'
+
+CSRF_HEADER_NAME 	
+
+'HTTP_X_CSRFTOKEN'
+
+CSRF_TRUSTED_ORIGINS 	
+
+[]
+
+CSRF_USE_SESSIONS 	
+
+False
+
+DATABASES 	
+
+{'default': {'ATOMIC_REQUESTS': False,
+             'AUTOCOMMIT': True,
+             'CONN_HEALTH_CHECKS': False,
+             'CONN_MAX_AGE': 0,
+             'ENGINE': 'django.db.backends.sqlite3',
+             'HOST': '',
+             'NAME': WindowsPath('C:/Users/trive/Desktop/Price  Tracker with Demand Prediction/db.sqlite3'),
+             'OPTIONS': {},
+             'PASSWORD': '********************',
+             'PORT': '',
+             'TEST': {'CHARSET': None,
+                      'COLLATION': None,
+                      'MIGRATE': True,
+                      'MIRROR': None,
+                      'NAME': None},
+             'TIME_ZONE': None,
+             'USER': ''}}
+
+DATABASE_ROUTERS 	
+
+[]
+
+DATA_UPLOAD_MAX_MEMORY_SIZE 	
+
+2621440
+
+DATA_UPLOAD_MAX_NUMBER_FIELDS 	
+
+1000
+
+DATA_UPLOAD_MAX_NUMBER_FILES 	
+
+100
+
+DATETIME_FORMAT 	
+
+'N j, Y, P'
+
+DATETIME_INPUT_FORMATS 	
+
+['%Y-%m-%d %H:%M:%S',
+ '%Y-%m-%d %H:%M:%S.%f',
+ '%Y-%m-%d %H:%M',
+ '%m/%d/%Y %H:%M:%S',
+ '%m/%d/%Y %H:%M:%S.%f',
+ '%m/%d/%Y %H:%M',
+ '%m/%d/%y %H:%M:%S',
+ '%m/%d/%y %H:%M:%S.%f',
+ '%m/%d/%y %H:%M']
+
+DATE_FORMAT 	
+
+'N j, Y'
+
+DATE_INPUT_FORMATS 	
+
+['%Y-%m-%d',
+ '%m/%d/%Y',
+ '%m/%d/%y',
+ '%b %d %Y',
+ '%b %d, %Y',
+ '%d %b %Y',
+ '%d %b, %Y',
+ '%B %d %Y',
+ '%B %d, %Y',
+ '%d %B %Y',
+ '%d %B, %Y']
+
+DEBUG 	
+
+True
+
+DEBUG_PROPAGATE_EXCEPTIONS 	
+
+False
+
+DECIMAL_SEPARATOR 	
+
+'.'
+
+DEFAULT_AUTO_FIELD 	
+
+'django.db.models.BigAutoField'
+
+DEFAULT_CHARSET 	
+
+'utf-8'
+
+DEFAULT_EXCEPTION_REPORTER 	
+
+'django.views.debug.ExceptionReporter'
+
+DEFAULT_EXCEPTION_REPORTER_FILTER 	
+
+'django.views.debug.SafeExceptionReporterFilter'
+
+DEFAULT_FILE_STORAGE 	
+
+'django.core.files.storage.FileSystemStorage'
+
+DEFAULT_FROM_EMAIL 	
+
+'your-email@gmail.com'
+
+DEFAULT_INDEX_TABLESPACE 	
+
+''
+
+DEFAULT_TABLESPACE 	
+
+''
+
+DISALLOWED_USER_AGENTS 	
+
+[]
+
+EMAIL_BACKEND 	
+
+'django.core.mail.backends.smtp.EmailBackend'
+
+EMAIL_HOST 	
+
+'smtp.gmail.com'
+
+EMAIL_HOST_PASSWORD 	
+
+'********************'
+
+EMAIL_HOST_USER 	
+
+'your-email@gmail.com'
+
+EMAIL_PORT 	
+
+587
+
+EMAIL_SSL_CERTFILE 	
+
+None
+
+EMAIL_SSL_KEYFILE 	
+
+'********************'
+
+EMAIL_SUBJECT_PREFIX 	
+
+'[Django] '
+
+EMAIL_TIMEOUT 	
+
+None
+
+EMAIL_USE_LOCALTIME 	
+
+False
+
+EMAIL_USE_SSL 	
+
+False
+
+EMAIL_USE_TLS 	
+
+True
+
+FILE_UPLOAD_DIRECTORY_PERMISSIONS 	
+
+None
+
+FILE_UPLOAD_HANDLERS 	
+
+['django.core.files.uploadhandler.MemoryFileUploadHandler',
+ 'django.core.files.uploadhandler.TemporaryFileUploadHandler']
+
+FILE_UPLOAD_MAX_MEMORY_SIZE 	
+
+2621440
+
+FILE_UPLOAD_PERMISSIONS 	
+
+420
+
+FILE_UPLOAD_TEMP_DIR 	
+
+None
+
+FIRST_DAY_OF_WEEK 	
+
+0
+
+FIXTURE_DIRS 	
+
+[]
+
+FORCE_SCRIPT_NAME 	
+
+None
+
+FORMAT_MODULE_PATH 	
+
+None
+
+FORM_RENDERER 	
+
+'django.forms.renderers.DjangoTemplates'
+
+IGNORABLE_404_URLS 	
+
+[]
+
+INSTALLED_APPS 	
+
+['django.contrib.admin',
+ 'django.contrib.auth',
+ 'django.contrib.contenttypes',
+ 'django.contrib.sessions',
+ 'django.contrib.messages',
+ 'django.contrib.staticfiles',
+ 'tracker',
+ 'rest_framework']
+
+INTERNAL_IPS 	
+
+[]
+
+LANGUAGES 	
+
+[('af', 'Afrikaans'),
+ ('ar', 'Arabic'),
+ ('ar-dz', 'Algerian Arabic'),
+ ('ast', 'Asturian'),
+ ('az', 'Azerbaijani'),
+ ('bg', 'Bulgarian'),
+ ('be', 'Belarusian'),
+ ('bn', 'Bengali'),
+ ('br', 'Breton'),
+ ('bs', 'Bosnian'),
+ ('ca', 'Catalan'),
+ ('ckb', 'Central Kurdish (Sorani)'),
+ ('cs', 'Czech'),
+ ('cy', 'Welsh'),
+ ('da', 'Danish'),
+ ('de', 'German'),
+ ('dsb', 'Lower Sorbian'),
+ ('el', 'Greek'),
+ ('en', 'English'),
+ ('en-au', 'Australian English'),
+ ('en-gb', 'British English'),
+ ('eo', 'Esperanto'),
+ ('es', 'Spanish'),
+ ('es-ar', 'Argentinian Spanish'),
+ ('es-co', 'Colombian Spanish'),
+ ('es-mx', 'Mexican Spanish'),
+ ('es-ni', 'Nicaraguan Spanish'),
+ ('es-ve', 'Venezuelan Spanish'),
+ ('et', 'Estonian'),
+ ('eu', 'Basque'),
+ ('fa', 'Persian'),
+ ('fi', 'Finnish'),
+ ('fr', 'French'),
+ ('fy', 'Frisian'),
+ ('ga', 'Irish'),
+ ('gd', 'Scottish Gaelic'),
+ ('gl', 'Galician'),
+ ('he', 'Hebrew'),
+ ('hi', 'Hindi'),
+ ('hr', 'Croatian'),
+ ('hsb', 'Upper Sorbian'),
+ ('hu', 'Hungarian'),
+ ('hy', 'Armenian'),
+ ('ia', 'Interlingua'),
+ ('id', 'Indonesian'),
+ ('ig', 'Igbo'),
+ ('io', 'Ido'),
+ ('is', 'Icelandic'),
+ ('it', 'Italian'),
+ ('ja', 'Japanese'),
+ ('ka', 'Georgian'),
+ ('kab', 'Kabyle'),
+ ('kk', 'Kazakh'),
+ ('km', 'Khmer'),
+ ('kn', 'Kannada'),
+ ('ko', 'Korean'),
+ ('ky', 'Kyrgyz'),
+ ('lb', 'Luxembourgish'),
+ ('lt', 'Lithuanian'),
+ ('lv', 'Latvian'),
+ ('mk', 'Macedonian'),
+ ('ml', 'Malayalam'),
+ ('mn', 'Mongolian'),
+ ('mr', 'Marathi'),
+ ('ms', 'Malay'),
+ ('my', 'Burmese'),
+ ('nb', 'Norwegian Bokmål'),
+ ('ne', 'Nepali'),
+ ('nl', 'Dutch'),
+ ('nn', 'Norwegian Nynorsk'),
+ ('os', 'Ossetic'),
+ ('pa', 'Punjabi'),
+ ('pl', 'Polish'),
+ ('pt', 'Portuguese'),
+ ('pt-br', 'Brazilian Portuguese'),
+ ('ro', 'Romanian'),
+ ('ru', 'Russian'),
+ ('sk', 'Slovak'),
+ ('sl', 'Slovenian'),
+ ('sq', 'Albanian'),
+ ('sr', 'Serbian'),
+ ('sr-latn', 'Serbian Latin'),
+ ('sv', 'Swedish'),
+ ('sw', 'Swahili'),
+ ('ta', 'Tamil'),
+ ('te', 'Telugu'),
+ ('tg', 'Tajik'),
+ ('th', 'Thai'),
+ ('tk', 'Turkmen'),
+ ('tr', 'Turkish'),
+ ('tt', 'Tatar'),
+ ('udm', 'Udmurt'),
+ ('uk', 'Ukrainian'),
+ ('ur', 'Urdu'),
+ ('uz', 'Uzbek'),
+ ('vi', 'Vietnamese'),
+ ('zh-hans', 'Simplified Chinese'),
+ ('zh-hant', 'Traditional Chinese')]
+
+LANGUAGES_BIDI 	
+
+['he', 'ar', 'ar-dz', 'ckb', 'fa', 'ur']
+
+LANGUAGE_CODE 	
+
+'en-us'
+
+LANGUAGE_COOKIE_AGE 	
+
+None
+
+LANGUAGE_COOKIE_DOMAIN 	
+
+None
+
+LANGUAGE_COOKIE_HTTPONLY 	
+
+False
+
+LANGUAGE_COOKIE_NAME 	
+
+'django_language'
+
+LANGUAGE_COOKIE_PATH 	
+
+'/'
+
+LANGUAGE_COOKIE_SAMESITE 	
+
+None
+
+LANGUAGE_COOKIE_SECURE 	
+
+False
+
+LOCALE_PATHS 	
+
+[]
+
+LOGGING 	
+
+{'disable_existing_loggers': False,
+ 'formatters': {'simple': {'format': '{levelname} {message}', 'style': '{'},
+                'verbose': {'format': '{levelname} {asctime} {module} '
+                                      '{process:d} {thread:d} {message}',
+                            'style': '{'}},
+ 'handlers': {'console': {'class': 'logging.StreamHandler',
+                          'formatter': 'simple',
+                          'level': 'DEBUG'},
+              'file': {'class': 'logging.FileHandler',
+                       'filename': WindowsPath('C:/Users/trive/Desktop/Price  Tracker with Demand Prediction/logs/price_tracker.log'),
+                       'formatter': 'verbose',
+                       'level': 'INFO'}},
+ 'loggers': {'django': {'handlers': ['console', 'file'],
+                        'level': 'INFO',
+                        'propagate': False},
+             'tracker': {'handlers': ['console', 'file'],
+                         'level': 'DEBUG',
+                         'propagate': False}},
+ 'root': {'handlers': ['console', 'file'], 'level': 'INFO'},
+ 'version': 1}
+
+LOGGING_CONFIG 	
+
+'logging.config.dictConfig'
+
+LOGIN_REDIRECT_URL 	
+
+'/accounts/profile/'
+
+LOGIN_URL 	
+
+'/accounts/login/'
+
+LOGOUT_REDIRECT_URL 	
+
+None
+
+MANAGERS 	
+
+[]
+
+MAX_RETRIES 	
+
+3
+
+MEDIA_ROOT 	
+
+WindowsPath('C:/Users/trive/Desktop/Price  Tracker with Demand Prediction/media')
+
+MEDIA_URL 	
+
+'/media/'
+
+MESSAGE_STORAGE 	
+
+'django.contrib.messages.storage.fallback.FallbackStorage'
+
+MIDDLEWARE 	
+
+['django.middleware.security.SecurityMiddleware',
+ 'django.contrib.sessions.middleware.SessionMiddleware',
+ 'django.middleware.common.CommonMiddleware',
+ 'django.middleware.csrf.CsrfViewMiddleware',
+ 'django.contrib.auth.middleware.AuthenticationMiddleware',
+ 'django.contrib.messages.middleware.MessageMiddleware',
+ 'django.middleware.clickjacking.XFrameOptionsMiddleware']
+
+MIGRATION_MODULES 	
+
+{}
+
+ML_MIN_DATA_POINTS 	
+
+10
+
+ML_PREDICTION_DAYS 	
+
+7
+
+MONTH_DAY_FORMAT 	
+
+'F j'
+
+NUMBER_GROUPING 	
+
+0
+
+PASSWORD_HASHERS 	
+
+'********************'
+
+PASSWORD_RESET_TIMEOUT 	
+
+'********************'
+
+PREPEND_WWW 	
+
+False
+
+REST_FRAMEWORK 	
+
+{'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+ 'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],
+ 'PAGE_SIZE': 10}
+
+ROOT_URLCONF 	
+
+'price_tracker.urls'
+
+SCRAPING_DELAY 	
+
+'********************'
+
+SECRET_KEY 	
+
+'********************'
+
+SECRET_KEY_FALLBACKS 	
+
+'********************'
+
+SECURE_CONTENT_TYPE_NOSNIFF 	
+
+True
+
+SECURE_CROSS_ORIGIN_OPENER_POLICY 	
+
+'same-origin'
+
+SECURE_HSTS_INCLUDE_SUBDOMAINS 	
+
+False
+
+SECURE_HSTS_PRELOAD 	
+
+False
+
+SECURE_HSTS_SECONDS 	
+
+0
+
+SECURE_PROXY_SSL_HEADER 	
+
+None
+
+SECURE_REDIRECT_EXEMPT 	
+
+[]
+
+SECURE_REFERRER_POLICY 	
+
+'same-origin'
+
+SECURE_SSL_HOST 	
+
+None
+
+SECURE_SSL_REDIRECT 	
+
+False
+
+SERVER_EMAIL 	
+
+'root@localhost'
+
+SESSION_CACHE_ALIAS 	
+
+'default'
+
+SESSION_COOKIE_AGE 	
+
+1209600
+
+SESSION_COOKIE_DOMAIN 	
+
+None
+
+SESSION_COOKIE_HTTPONLY 	
+
+True
+
+SESSION_COOKIE_NAME 	
+
+'sessionid'
+
+SESSION_COOKIE_PATH 	
+
+'/'
+
+SESSION_COOKIE_SAMESITE 	
+
+'Lax'
+
+SESSION_COOKIE_SECURE 	
+
+False
+
+SESSION_ENGINE 	
+
+'django.contrib.sessions.backends.db'
+
+SESSION_EXPIRE_AT_BROWSER_CLOSE 	
+
+False
+
+SESSION_FILE_PATH 	
+
+None
+
+SESSION_SAVE_EVERY_REQUEST 	
+
+False
+
+SESSION_SERIALIZER 	
+
+'django.contrib.sessions.serializers.JSONSerializer'
+
+SETTINGS_MODULE 	
+
+'price_tracker.settings'
+
+SHORT_DATETIME_FORMAT 	
+
+'m/d/Y P'
+
+SHORT_DATE_FORMAT 	
+
+'m/d/Y'
+
+SIGNING_BACKEND 	
+
+'django.core.signing.TimestampSigner'
+
+SILENCED_SYSTEM_CHECKS 	
+
+[]
+
+STATICFILES_DIRS 	
+
+[WindowsPath('C:/Users/trive/Desktop/Price  Tracker with Demand Prediction/static')]
+
+STATICFILES_FINDERS 	
+
+['django.contrib.staticfiles.finders.FileSystemFinder',
+ 'django.contrib.staticfiles.finders.AppDirectoriesFinder']
+
+STATICFILES_STORAGE 	
+
+'django.contrib.staticfiles.storage.StaticFilesStorage'
+
+STATIC_ROOT 	
+
+WindowsPath('C:/Users/trive/Desktop/Price  Tracker with Demand Prediction/staticfiles')
+
+STATIC_URL 	
+
+'/static/'
+
+STORAGES 	
+
+{'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+ 'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'}}
+
+TEMPLATES 	
+
+[{'APP_DIRS': True,
+  'BACKEND': 'django.template.backends.django.DjangoTemplates',
+  'DIRS': [WindowsPath('C:/Users/trive/Desktop/Price  Tracker with Demand Prediction/templates')],
+  'OPTIONS': {'context_processors': ['django.template.context_processors.debug',
+                                     'django.template.context_processors.request',
+                                     'django.contrib.auth.context_processors.auth',
+                                     'django.contrib.messages.context_processors.messages']}}]
+
+TEST_NON_SERIALIZED_APPS 	
+
+[]
+
+TEST_RUNNER 	
+
+'django.test.runner.DiscoverRunner'
+
+THOUSAND_SEPARATOR 	
+
+','
+
+TIME_FORMAT 	
+
+'P'
+
+TIME_INPUT_FORMATS 	
+
+['%H:%M:%S', '%H:%M:%S.%f', '%H:%M']
+
+TIME_ZONE 	
+
+'UTC'
+
+USER_AGENT 	
+
+('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like '
+ 'Gecko) Chrome/91.0.4472.124 Safari/537.36')
+
+USE_DEPRECATED_PYTZ 	
+
+False
+
+USE_I18N 	
+
+True
+
+USE_L10N 	
+
+True
+
+USE_THOUSAND_SEPARATOR 	
+
+False
+
+USE_TZ 	
+
+True
+
+USE_X_FORWARDED_HOST 	
+
+False
+
+USE_X_FORWARDED_PORT 	
+
+False
+
+WSGI_APPLICATION 	
+
+'price_tracker.wsgi.application'
+
+X_FRAME_OPTIONS 	
+
+'DENY'
+
+YEAR_MONTH_FORMAT 	
+
+'F Y'
+
+You’re seeing this error because you have DEBUG = True in your Django settings file. Change that to False, and Django will display a standard page generated by the handler for this status code.
+"

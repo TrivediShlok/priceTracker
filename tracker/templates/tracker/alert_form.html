@@ -1,0 +1,273 @@
+{% extends 'tracker/base.html' %}
+
+{% block title %}Add Alert - {{ product.name }} - Price Tracker{% endblock %}
+
+{% block extra_css %}
+<style>
+    .alert-form-container {
+        background: white;
+        border-radius: 1rem;
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+    }
+    
+    .alert-header {
+        background: var(--gradient-warning);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+    }
+    
+    .alert-body {
+        padding: 2rem;
+    }
+    
+    .alert-type-card {
+        border: 2px solid var(--gray-200);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+    }
+    
+    .alert-type-card:hover {
+        border-color: var(--primary-color);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .alert-type-card.selected {
+        border-color: var(--primary-color);
+        background: rgba(99, 102, 241, 0.05);
+    }
+    
+    .threshold-input {
+        border: 2px solid var(--gray-200);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        font-size: 1.1rem;
+        text-align: center;
+    }
+    
+    .threshold-input:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.15);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="alert-form-container fade-in">
+                <div class="alert-header">
+                    <div class="mb-3">
+                        <i class="fas fa-bell fa-3x"></i>
+                    </div>
+                    <h2 class="mb-2">Create Price Alert</h2>
+                    <p class="mb-0 opacity-90">Get notified when {{ product.name|truncatechars:30 }} reaches your target price</p>
+                </div>
+                
+                <div class="alert-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Product Info -->
+                        <div class="card border-0 bg-light mb-4">
+                            <div class="card-body">
+                                <h6 class="text-muted mb-2">
+                                    <i class="fas fa-box me-2"></i>Product Information
+                                </h6>
+                                <h5 class="mb-1">{{ product.name }}</h5>
+                                <p class="text-muted mb-2">
+                                    {% if product.current_price %}
+                                        Current Price: <strong>{{ product.current_price }} {{ product.currency }}</strong>
+                                    {% else %}
+                                        <em>No current price data available</em>
+                                    {% endif %}
+                                </p>
+                                <small class="text-muted">
+                                    <i class="fas fa-link me-1"></i>
+                                    <a href="{{ product.url }}" target="_blank" class="text-decoration-none">
+                                        View Product Page <i class="fas fa-external-link-alt ms-1"></i>
+                                    </a>
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- Alert Type -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold mb-3">
+                                <i class="fas fa-bell me-2 text-warning"></i>Alert Type
+                            </label>
+                            
+                            <div class="alert-type-card" data-type="price_drop">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="fas fa-arrow-down fa-2x text-success"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">Price Drop Alert</h6>
+                                        <small class="text-muted">Get notified when price goes below your threshold</small>
+                                    </div>
+                                    <div class="ms-auto">
+                                        <input type="radio" name="alert_type" value="price_drop" class="form-check-input" checked>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="alert-type-card" data-type="price_increase">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="fas fa-arrow-up fa-2x text-danger"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">Price Increase Alert</h6>
+                                        <small class="text-muted">Get notified when price goes above your threshold</small>
+                                    </div>
+                                    <div class="ms-auto">
+                                        <input type="radio" name="alert_type" value="price_increase" class="form-check-input">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Threshold Value -->
+                        <div class="mb-4">
+                            <label for="{{ form.threshold_value.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-crosshairs me-2 text-primary"></i>Target Price
+                            </label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text">{{ product.currency }}</span>
+                                {{ form.threshold_value }}
+                            </div>
+                            {% if form.threshold_value.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.threshold_value.errors %}
+                                        <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Enter the price that will trigger your alert
+                            </div>
+                        </div>
+                        
+                        <!-- Notification Settings -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold mb-3">
+                                <i class="fas fa-envelope me-2 text-info"></i>Notification Settings
+                            </label>
+                            
+                            <div class="form-check form-switch form-check-lg mb-2">
+                                {{ form.email_notification }}
+                                <label class="form-check-label" for="{{ form.email_notification.id_for_label }}">
+                                    <i class="fas fa-envelope me-2"></i>Email Notification
+                                </label>
+                                <small class="d-block text-muted">Send alert via email</small>
+                            </div>
+                            
+                            <div class="form-check form-switch form-check-lg">
+                                {{ form.web_notification }}
+                                <label class="form-check-label" for="{{ form.web_notification.id_for_label }}">
+                                    <i class="fas fa-globe me-2"></i>Web Notification
+                                </label>
+                                <small class="d-block text-muted">Show notification in dashboard</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Submit Buttons -->
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center pt-3 border-top">
+                            <a href="{% url 'tracker:product_detail' product.pk %}" class="btn btn-outline-secondary mb-2 mb-md-0">
+                                <i class="fas fa-arrow-left me-2"></i>Cancel
+                            </a>
+                            
+                            <button type="submit" class="btn btn-warning btn-lg">
+                                <i class="fas fa-bell me-2"></i>Create Alert
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Alert type selection
+    const alertCards = document.querySelectorAll('.alert-type-card');
+    const radioButtons = document.querySelectorAll('input[name="alert_type"]');
+    
+    alertCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const type = this.dataset.type;
+            const radio = this.querySelector('input[type="radio"]');
+            
+            // Remove selected class from all cards
+            alertCards.forEach(c => c.classList.remove('selected'));
+            
+            // Add selected class to clicked card
+            this.classList.add('selected');
+            
+            // Check the radio button
+            radio.checked = true;
+        });
+    });
+    
+    // Initialize with first option selected
+    alertCards[0].classList.add('selected');
+    
+    // Form validation
+    const form = document.querySelector('form');
+    const thresholdInput = document.getElementById('{{ form.threshold_value.id_for_label }}');
+    
+    form.addEventListener('submit', function(e) {
+        const threshold = parseFloat(thresholdInput.value);
+        const currentPrice = {{ product.current_price|default:0 }};
+        const alertType = document.querySelector('input[name="alert_type"]:checked').value;
+        
+        // Validate threshold
+        if (alertType === 'price_drop' && threshold >= currentPrice && currentPrice > 0) {
+            e.preventDefault();
+            alert('For price drop alerts, threshold should be lower than current price');
+            return;
+        }
+        
+        if (alertType === 'price_increase' && threshold <= currentPrice && currentPrice > 0) {
+            e.preventDefault();
+            alert('For price increase alerts, threshold should be higher than current price');
+            return;
+        }
+        
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Alert...';
+        submitBtn.disabled = true;
+        
+        // Re-enable after 10 seconds (fallback)
+        setTimeout(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }, 10000);
+    });
+    
+    // Threshold input formatting
+    thresholdInput.addEventListener('input', function() {
+        // Remove any non-numeric characters except decimal point
+        this.value = this.value.replace(/[^0-9.]/g, '');
+        
+        // Ensure only one decimal point
+        const parts = this.value.split('.');
+        if (parts.length > 2) {
+            this.value = parts[0] + '.' + parts.slice(1).join('');
+        }
+    });
+});
+</script>
+{% endblock %}

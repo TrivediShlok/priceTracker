@@ -1,136 +1,327 @@
-{% extends 'tracker/base.html' %} {% block title %}Register - Price Tracker{%
-endblock %} {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-user-plus me-2"></i>Create Account
-                </h5>
-            </div>
-            <div class="card-body">
-                <form method="post" novalidate>
-                    {% csrf_token %}
+{% extends 'tracker/base.html' %}
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label
-                                for="{{ form.first_name.id_for_label }}"
-                                class="form-label"
-                            >
-                                {{ form.first_name.label }}
-                            </label>
-                            {{ form.first_name }} {% if form.first_name.errors
-                            %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.first_name.errors %} {{
-                                error }} {% endfor %}
+{% block title %}Register - Price Tracker{% endblock %}
+
+{% block extra_css %}
+<style>
+    .register-container {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+    }
+    
+    .register-card {
+        border: none;
+        border-radius: 1rem;
+        box-shadow: var(--shadow-xl);
+        overflow: hidden;
+    }
+    
+    .register-header {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+        position: relative;
+    }
+    
+    .register-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20"><defs><radialGradient id="a" cx="50%" cy="0%" r="100%"><stop offset="0%" stop-color="white" stop-opacity=".05"/><stop offset="100%" stop-color="white" stop-opacity="0"/></radialGradient></defs><rect width="100%" height="100%" fill="url(%23a)"/></svg>');
+    }
+    
+    .register-body {
+        padding: 2rem;
+    }
+    
+    .form-floating {
+        margin-bottom: 1rem;
+    }
+    
+    .form-floating .form-control {
+        border: 2px solid var(--gray-200);
+        border-radius: 0.75rem;
+        padding: 1rem 0.75rem;
+        height: calc(3.5rem + 2px);
+    }
+    
+    .form-floating .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.15);
+    }
+    
+    .form-floating label {
+        color: var(--gray-500);
+        font-weight: 500;
+    }
+    
+    .btn-register {
+        background: var(--gradient-primary);
+        border: none;
+        color: white;
+        padding: 0.875rem 2rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        width: 100%;
+        height: 3rem;
+    }
+    
+    .btn-register:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+        color: white;
+    }
+    
+    .password-strength {
+        height: 4px;
+        border-radius: 2px;
+        background: var(--gray-200);
+        margin-top: 0.5rem;
+        overflow: hidden;
+    }
+    
+    .password-strength-bar {
+        height: 100%;
+        transition: all 0.3s ease;
+        border-radius: 2px;
+    }
+    
+    .strength-weak { background: #ef4444; width: 25%; }
+    .strength-fair { background: #f59e0b; width: 50%; }
+    .strength-good { background: #3b82f6; width: 75%; }
+    .strength-strong { background: #10b981; width: 100%; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="register-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-6 col-md-8">
+                <div class="register-card fade-in">
+                    <div class="register-header">
+                        <div style="position: relative; z-index: 1;">
+                            <div class="mb-3">
+                                <i class="fas fa-user-plus fa-3x"></i>
                             </div>
-                            {% endif %}
+                            <h2 class="mb-2">Create Account</h2>
+                            <p class="mb-0 opacity-90">Join Price Tracker and start monitoring your favorite products</p>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label
-                                for="{{ form.last_name.id_for_label }}"
-                                class="form-label"
-                            >
-                                {{ form.last_name.label }}
-                            </label>
-                            {{ form.last_name }} {% if form.last_name.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.last_name.errors %} {{
-                                error }} {% endfor %}
+                    </div>
+                    
+                    <div class="register-body">
+                        <form method="post" novalidate>
+                            {% csrf_token %}
+
+                            <!-- Name Fields -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        {{ form.first_name }}
+                                        <label for="{{ form.first_name.id_for_label }}">
+                                            <i class="fas fa-user me-2"></i>{{ form.first_name.label }}
+                                        </label>
+                                        {% if form.first_name.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {% for error in form.first_name.errors %}
+                                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        {{ form.last_name }}
+                                        <label for="{{ form.last_name.id_for_label }}">
+                                            <i class="fas fa-user me-2"></i>{{ form.last_name.label }}
+                                        </label>
+                                        {% if form.last_name.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {% for error in form.last_name.errors %}
+                                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
                             </div>
-                            {% endif %}
-                        </div>
-                    </div>
 
-                    <div class="mb-3">
-                        <label
-                            for="{{ form.username.id_for_label }}"
-                            class="form-label"
-                        >
-                            {{ form.username.label }}
-                        </label>
-                        {{ form.username }} {% if form.username.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in form.username.errors %} {{ error }}
-                            {% endfor %}
-                        </div>
-                        {% endif %} {% if form.username.help_text %}
-                        <div class="form-text">
-                            {{ form.username.help_text }}
-                        </div>
-                        {% endif %}
-                    </div>
+                            <!-- Username Field -->
+                            <div class="form-floating">
+                                {{ form.username }}
+                                <label for="{{ form.username.id_for_label }}">
+                                    <i class="fas fa-at me-2"></i>{{ form.username.label }} *
+                                </label>
+                                {% if form.username.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.username.errors %}
+                                            <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                {% if form.username.help_text %}
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle me-1"></i>{{ form.username.help_text }}
+                                    </div>
+                                {% endif %}
+                            </div>
 
-                    <div class="mb-3">
-                        <label
-                            for="{{ form.email.id_for_label }}"
-                            class="form-label"
-                        >
-                            {{ form.email.label }}
-                        </label>
-                        {{ form.email }} {% if form.email.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in form.email.errors %} {{ error }} {%
-                            endfor %}
-                        </div>
-                        {% endif %}
-                    </div>
+                            <!-- Email Field -->
+                            <div class="form-floating">
+                                {{ form.email }}
+                                <label for="{{ form.email.id_for_label }}">
+                                    <i class="fas fa-envelope me-2"></i>{{ form.email.label }} *
+                                </label>
+                                {% if form.email.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.email.errors %}
+                                            <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
 
-                    <div class="mb-3">
-                        <label
-                            for="{{ form.password1.id_for_label }}"
-                            class="form-label"
-                        >
-                            {{ form.password1.label }}
-                        </label>
-                        {{ form.password1 }} {% if form.password1.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in form.password1.errors %} {{ error }}
-                            {% endfor %}
-                        </div>
-                        {% endif %} {% if form.password1.help_text %}
-                        <div class="form-text">
-                            {{ form.password1.help_text }}
-                        </div>
-                        {% endif %}
-                    </div>
+                            <!-- Password Fields -->
+                            <div class="form-floating">
+                                {{ form.password1 }}
+                                <label for="{{ form.password1.id_for_label }}">
+                                    <i class="fas fa-lock me-2"></i>{{ form.password1.label }} *
+                                </label>
+                                <div class="password-strength">
+                                    <div class="password-strength-bar" id="passwordStrengthBar"></div>
+                                </div>
+                                <small class="text-muted" id="passwordStrengthText">Enter a strong password</small>
+                                {% if form.password1.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.password1.errors %}
+                                            <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                {% if form.password1.help_text %}
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle me-1"></i>{{ form.password1.help_text }}
+                                    </div>
+                                {% endif %}
+                            </div>
 
-                    <div class="mb-3">
-                        <label
-                            for="{{ form.password2.id_for_label }}"
-                            class="form-label"
-                        >
-                            {{ form.password2.label }}
-                        </label>
-                        {{ form.password2 }} {% if form.password2.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in form.password2.errors %} {{ error }}
-                            {% endfor %}
-                        </div>
-                        {% endif %} {% if form.password2.help_text %}
-                        <div class="form-text">
-                            {{ form.password2.help_text }}
-                        </div>
-                        {% endif %}
-                    </div>
+                            <div class="form-floating">
+                                {{ form.password2 }}
+                                <label for="{{ form.password2.id_for_label }}">
+                                    <i class="fas fa-lock me-2"></i>{{ form.password2.label }} *
+                                </label>
+                                {% if form.password2.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.password2.errors %}
+                                            <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                {% if form.password2.help_text %}
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle me-1"></i>{{ form.password2.help_text }}
+                                    </div>
+                                {% endif %}
+                            </div>
 
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-user-plus me-1"></i>Create Account
-                        </button>
+                            <div class="d-grid mt-4">
+                                <button type="submit" class="btn-register">
+                                    <i class="fas fa-user-plus me-2"></i>Create Account
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                </form>
+                </div>
+
+                <div class="text-center mt-3">
+                    <p class="text-muted">
+                        Already have an account?
+                        <a href="{% url 'admin:login' %}" class="text-decoration-none fw-bold">Sign in here</a>
+                    </p>
+                </div>
             </div>
-        </div>
-
-        <div class="text-center mt-3">
-            <p class="text-muted">
-                Already have an account?
-                <a href="{% url 'admin:login' %}">Sign in here</a>
-            </p>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const passwordField = document.getElementById('{{ form.password1.id_for_label }}');
+    const strengthBar = document.getElementById('passwordStrengthBar');
+    const strengthText = document.getElementById('passwordStrengthText');
+    
+    passwordField.addEventListener('input', function() {
+        const password = this.value;
+        const strength = calculatePasswordStrength(password);
+        
+        // Remove all strength classes
+        strengthBar.className = 'password-strength-bar';
+        
+        if (password.length === 0) {
+            strengthText.textContent = 'Enter a strong password';
+            return;
+        }
+        
+        switch (strength) {
+            case 1:
+                strengthBar.classList.add('strength-weak');
+                strengthText.textContent = 'Weak password';
+                strengthText.className = 'text-danger';
+                break;
+            case 2:
+                strengthBar.classList.add('strength-fair');
+                strengthText.textContent = 'Fair password';
+                strengthText.className = 'text-warning';
+                break;
+            case 3:
+                strengthBar.classList.add('strength-good');
+                strengthText.textContent = 'Good password';
+                strengthText.className = 'text-info';
+                break;
+            case 4:
+                strengthBar.classList.add('strength-strong');
+                strengthText.textContent = 'Strong password';
+                strengthText.className = 'text-success';
+                break;
+        }
+    });
+    
+    function calculatePasswordStrength(password) {
+        let score = 0;
+        
+        if (password.length >= 8) score++;
+        if (/[a-z]/.test(password)) score++;
+        if (/[A-Z]/.test(password)) score++;
+        if (/[0-9]/.test(password)) score++;
+        if (/[^A-Za-z0-9]/.test(password)) score++;
+        
+        return Math.min(score, 4);
+    }
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Account...';
+        submitBtn.disabled = true;
+        
+        // Re-enable after 10 seconds (fallback)
+        setTimeout(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }, 10000);
+    });
+});
+</script>
 {% endblock %}

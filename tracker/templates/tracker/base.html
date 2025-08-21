@@ -16,6 +16,64 @@
     
     <!-- Custom CSS -->
     <style>
+        :root {
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-warning: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --primary-color: #667eea;
+            --gray-50: #f9fafb;
+            --gray-200: #e5e7eb;
+            --gray-500: #6b7280;
+            --danger-color: #ef4444;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        /* Fix for profile dropdown z-index issue */
+        .navbar {
+            position: relative;
+            z-index: 1100 !important;
+        }
+
+        .navbar .dropdown-menu {
+            z-index: 1200 !important;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 0.5rem;
+        }
+
+        /* Ensure dropdown is properly positioned */
+        .navbar-nav .nav-item.dropdown {
+            position: relative;
+        }
+
+        /* For sticky or fixed navbars */
+        .sticky-top, .fixed-top {
+            z-index: 1100 !important;
+        }
+
+        /* Additional dropdown styling */
+        .dropdown-menu {
+            margin-top: 0.25rem;
+            min-width: 12rem;
+        }
+
+        .dropdown-item {
+            padding: 0.5rem 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            background-color: rgba(102, 126, 234, 0.1);
+            color: var(--primary-color);
+        }
+
+        .dropdown-divider {
+            margin: 0.5rem 0;
+        }
+
+        /* Chart container styles */
         .chart-container {
             position: relative;
             height: 400px;
@@ -62,6 +120,16 @@
         .btn-chart {
             margin: 5px;
         }
+
+        /* Fade in animation for content */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
@@ -97,17 +165,22 @@
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" 
+                               data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fas fa-user me-1"></i>{{ user.username }}
                             </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'tracker:profile' %}">
-                                    <i class="fas fa-user-circle me-1"></i>Profile
-                                </a></li>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'tracker:profile' %}">
+                                        <i class="fas fa-user-circle me-2"></i>Profile
+                                    </a>
+                                </li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'admin:logout' %}">
-                                    <i class="fas fa-sign-out-alt me-1"></i>Logout
-                                </a></li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'admin:logout' %}">
+                                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                    </a>
+                                </li>
                             </ul>
                         </li>
                     {% else %}
@@ -221,9 +294,60 @@
                 `;
             }
         };
+
+        // Ensure dropdown is properly initialized
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize all dropdowns
+            var dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
+            var dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
+                return new bootstrap.Dropdown(dropdownToggleEl);
+            });
+
+            // Add click handler to ensure dropdown works
+            const navbarDropdown = document.getElementById('navbarDropdown');
+            if (navbarDropdown) {
+                navbarDropdown.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // Bootstrap will handle the toggle
+                });
+            }
+        });
     </script>
     
     {% block extra_js %}
     {% endblock %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Force dropdown to stay on top
+    const dropdownMenus = document.querySelectorAll('.navbar .dropdown-menu');
+    dropdownMenus.forEach(menu => {
+        menu.style.zIndex = '1200';
+    });
+
+    // Handle dropdown show/hide events
+    const dropdownToggles = document.querySelectorAll('.navbar .dropdown-toggle');
+    dropdownToggles.forEach(toggle => {
+        toggle.addEventListener('show.bs.dropdown', function(e) {
+            const menu = this.nextElementSibling;
+            if (menu) {
+                menu.style.zIndex = '1200';
+            }
+        });
+    });
+
+    // Ensure dropdown closes when clicking outside
+    document.addEventListener('click', function(e) {
+        const dropdowns = document.querySelectorAll('.navbar .dropdown-menu.show');
+        dropdowns.forEach(dropdown => {
+            const toggle = dropdown.previousElementSibling;
+            if (!dropdown.contains(e.target) && !toggle.contains(e.target)) {
+                bootstrap.Dropdown.getInstance(toggle)?.hide();
+            }
+        });
+    });
+});
+</script>
+
+
 </body>
 </html>

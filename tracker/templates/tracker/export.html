@@ -1,142 +1,371 @@
-{% extends 'tracker/base.html' %} {% block title %}Export Data - Price Tracker{%
-endblock %} {% block content %}
-<div class="row">
-    <div class="col-md-8 mx-auto">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-download me-2"></i>Export Data
-                </h5>
+{% extends 'tracker/base.html' %}
+
+{% block title %}Export Data - Price Tracker{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-gradient text-white" style="background: var(--gradient-primary);">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <i class="fas fa-download fa-2x"></i>
+                    </div>
+                    <div>
+                        <h4 class="mb-1">Export Your Data</h4>
+                        <p class="mb-0 opacity-90">Download your price tracking data in various formats</p>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
+            
+            <div class="card-body p-4">
                 <form method="post">
                     {% csrf_token %}
+                    
                     <div class="row">
+                        <!-- Export Options -->
                         <div class="col-md-6">
-                            <h6>Export Options</h6>
-                            <div class="mb-3">
-                                <label
-                                    for="{{ form.data_type.id_for_label }}"
-                                    class="form-label"
-                                    >Data Type</label
-                                >
-                                {{ form.data_type }} {% if form.data_type.errors
-                                %}
-                                <div class="text-danger">
-                                    {{ form.data_type.errors }}
+                            <div class="card border-0 bg-light h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title text-primary mb-3">
+                                        <i class="fas fa-cog me-2"></i>Export Options
+                                    </h5>
+                                    
+                                    <div class="mb-3">
+                                        <label for="{{ form.export_format.id_for_label }}" class="form-label fw-bold">
+                                            <i class="fas fa-file-export me-2"></i>Export Format
+                                        </label>
+                                        {{ form.export_format }}
+                                        {% if form.export_format.errors %}
+                                            <div class="text-danger mt-2">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                                {{ form.export_format.errors }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">
+                                            <i class="fas fa-calendar-alt me-2"></i>Date Range
+                                        </label>
+                                        <div class="btn-group d-grid" role="group">
+                                            <input type="radio" class="btn-check" name="date_range" id="last_30" value="30" checked>
+                                            <label class="btn btn-outline-primary" for="last_30">Last 30 Days</label>
+                                            
+                                            <input type="radio" class="btn-check" name="date_range" id="last_90" value="90">
+                                            <label class="btn btn-outline-primary" for="last_90">Last 90 Days</label>
+                                            
+                                            <input type="radio" class="btn-check" name="date_range" id="all_time" value="all">
+                                            <label class="btn btn-outline-primary" for="all_time">All Time</label>
+                                        </div>
+                                    </div>
                                 </div>
-                                {% endif %}
-                            </div>
-                            <div class="mb-3">
-                                <label
-                                    for="{{ form.format.id_for_label }}"
-                                    class="form-label"
-                                    >Format</label
-                                >
-                                {{ form.format }} {% if form.format.errors %}
-                                <div class="text-danger">
-                                    {{ form.format.errors }}
-                                </div>
-                                {% endif %}
-                            </div>
-                            <div class="mb-3">
-                                <label
-                                    for="{{ form.date_range.id_for_label }}"
-                                    class="form-label"
-                                    >Date Range</label
-                                >
-                                {{ form.date_range }} {% if
-                                form.date_range.errors %}
-                                <div class="text-danger">
-                                    {{ form.date_range.errors }}
-                                </div>
-                                {% endif %}
                             </div>
                         </div>
+                        
+                        <!-- Data Selection -->
                         <div class="col-md-6">
-                            <h6>Filters</h6>
-                            <div class="mb-3">
-                                <label
-                                    for="{{ form.products.id_for_label }}"
-                                    class="form-label"
-                                    >Products</label
-                                >
-                                {{ form.products }} {% if form.products.errors
-                                %}
-                                <div class="text-danger">
-                                    {{ form.products.errors }}
+                            <div class="card border-0 bg-light h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title text-primary mb-3">
+                                        <i class="fas fa-database me-2"></i>Data Selection
+                                    </h5>
+                                    
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch form-check-lg">
+                                            <input class="form-check-input" type="checkbox" id="include_products" checked>
+                                            <label class="form-check-label fw-bold" for="include_products">
+                                                <i class="fas fa-box me-2"></i>Products
+                                            </label>
+                                            <small class="d-block text-muted">Basic product information and current prices</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch form-check-lg">
+                                            <input class="form-check-input" type="checkbox" id="include_history" checked>
+                                            <label class="form-check-label fw-bold" for="include_history">
+                                                <i class="fas fa-history me-2"></i>Price History
+                                            </label>
+                                            <small class="d-block text-muted">Historical price data and trends</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch form-check-lg">
+                                            <input class="form-check-input" type="checkbox" id="include_alerts">
+                                            <label class="form-check-label fw-bold" for="include_alerts">
+                                                <i class="fas fa-bell me-2"></i>Alerts
+                                            </label>
+                                            <small class="d-block text-muted">Price alert configurations and history</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch form-check-lg">
+                                            <input class="form-check-input" type="checkbox" id="include_predictions">
+                                            <label class="form-check-label fw-bold" for="include_predictions">
+                                                <i class="fas fa-chart-line me-2"></i>Predictions
+                                            </label>
+                                            <small class="d-block text-muted">ML-generated price predictions</small>
+                                        </div>
+                                    </div>
                                 </div>
-                                {% endif %}
-                            </div>
-                            <div class="mb-3">
-                                <label
-                                    for="{{ form.include_predictions.id_for_label }}"
-                                    class="form-check-label"
-                                >
-                                    {{ form.include_predictions }} Include
-                                    Predictions
-                                </label>
-                                {% if form.include_predictions.errors %}
-                                <div class="text-danger">
-                                    {{ form.include_predictions.errors }}
-                                </div>
-                                {% endif %}
-                            </div>
-                            <div class="mb-3">
-                                <label
-                                    for="{{ form.include_alerts.id_for_label }}"
-                                    class="form-check-label"
-                                >
-                                    {{ form.include_alerts }} Include Alerts
-                                </label>
-                                {% if form.include_alerts.errors %}
-                                <div class="text-danger">
-                                    {{ form.include_alerts.errors }}
-                                </div>
-                                {% endif %}
                             </div>
                         </div>
                     </div>
 
-                    <hr />
+                    <!-- Export Preview -->
+                    <div class="card border-0 bg-info bg-opacity-10 mt-4">
+                        <div class="card-body">
+                            <h6 class="card-title text-info">
+                                <i class="fas fa-eye me-2"></i>Export Preview
+                            </h6>
+                            <div class="row text-center">
+                                <div class="col-md-3">
+                                    <div class="mb-2">
+                                        <i class="fas fa-box fa-2x text-primary"></i>
+                                    </div>
+                                    <div class="fw-bold" id="product-count">{{ products.count }}</div>
+                                    <small class="text-muted">Products</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-2">
+                                        <i class="fas fa-history fa-2x text-success"></i>
+                                    </div>
+                                    <div class="fw-bold" id="history-count">{{ history_count }}</div>
+                                    <small class="text-muted">Price Records</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-2">
+                                        <i class="fas fa-bell fa-2x text-warning"></i>
+                                    </div>
+                                    <div class="fw-bold" id="alert-count">{{ alerts_count }}</div>
+                                    <small class="text-muted">Alerts</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-2">
+                                        <i class="fas fa-chart-line fa-2x text-info"></i>
+                                    </div>
+                                    <div class="fw-bold" id="prediction-count">{{ predictions_count }}</div>
+                                    <small class="text-muted">Predictions</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                    <div class="row">
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-download me-1"></i>Export Data
+                    <!-- Action Buttons -->
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 pt-3 border-top">
+                        <a href="{% url 'tracker:dashboard' %}" class="btn btn-outline-secondary mb-2 mb-md-0">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                        </a>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-info" onclick="previewData()">
+                                <i class="fas fa-eye me-2"></i>Preview
                             </button>
-                            <a
-                                href="{% url 'tracker:dashboard' %}"
-                                class="btn btn-outline-secondary"
-                            >
-                                <i class="fas fa-arrow-left me-1"></i>Back to
-                                Dashboard
-                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-download me-2"></i>Export Data
+                            </button>
                         </div>
                     </div>
                 </form>
 
+                <!-- Export Information -->
                 {% if export_info %}
-                <hr />
-                <div class="alert alert-info">
-                    <h6>
-                        <i class="fas fa-info-circle me-2"></i>Export
-                        Information
+                <div class="alert alert-success border-0 shadow-sm mt-4">
+                    <h6 class="alert-heading">
+                        <i class="fas fa-check-circle me-2"></i>Export Complete
                     </h6>
-                    <p class="mb-1">
-                        <strong>Records:</strong> {{ export_info.record_count }}
-                    </p>
-                    <p class="mb-1">
-                        <strong>File Size:</strong> {{ export_info.file_size }}
-                    </p>
-                    <p class="mb-0">
-                        <strong>Generated:</strong> {{
-                        export_info.generated_at|date:"M d, Y H:i" }}
-                    </p>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <strong>Records:</strong> {{ export_info.record_count }}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>File Size:</strong> {{ export_info.file_size }}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Generated:</strong> {{ export_info.generated_at|date:"M d, Y H:i" }}
+                        </div>
+                    </div>
                 </div>
                 {% endif %}
             </div>
         </div>
+        
+        <!-- Help Section -->
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-body">
+                <h6 class="card-title text-primary">
+                    <i class="fas fa-question-circle me-2"></i>Export Help
+                </h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>File Formats</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-file-csv text-success me-2"></i><strong>CSV:</strong> Excel-compatible format</li>
+                            <li><i class="fas fa-file-code text-info me-2"></i><strong>JSON:</strong> Developer-friendly format</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Data Privacy</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-shield-alt text-success me-2"></i>Your data is secure</li>
+                            <li><i class="fas fa-user-lock text-info me-2"></i>Only your data is exported</li>
+                            <li><i class="fas fa-trash text-warning me-2"></i>Files auto-delete after download</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function previewData() {
+    const selectedOptions = {
+        format: document.querySelector('[name="export_format"]').value,
+        dateRange: document.querySelector('[name="date_range"]:checked').value,
+        includeProducts: document.querySelector('#include_products').checked,
+        includeHistory: document.querySelector('#include_history').checked,
+        includeAlerts: document.querySelector('#include_alerts').checked,
+        includePredictions: document.querySelector('#include_predictions').checked
+    };
+    
+    // Show preview modal
+    const modal = new bootstrap.Modal(document.getElementById('previewModal') || createPreviewModal());
+    modal.show();
+    
+    // Update preview content
+    updatePreviewContent(selectedOptions);
+}
+
+function createPreviewModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'previewModal';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-eye me-2"></i>Export Preview
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="previewContent">
+                    <!-- Preview content will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Close
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="document.querySelector('form').submit()">
+                        <i class="fas fa-download me-1"></i>Proceed with Export
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    return modal;
+}
+
+function updatePreviewContent(options) {
+    const content = document.getElementById('previewContent');
+    content.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading preview...</span>
+            </div>
+            <p class="mt-2">Generating preview...</p>
+        </div>
+    `;
+    
+    // Simulate preview generation
+    setTimeout(() => {
+        content.innerHTML = `
+            <div class="alert alert-info border-0">
+                <h6><i class="fas fa-info-circle me-2"></i>Export Configuration</h6>
+                <ul class="mb-0">
+                    <li><strong>Format:</strong> ${options.format.toUpperCase()}</li>
+                    <li><strong>Date Range:</strong> ${options.dateRange === 'all' ? 'All Time' : 'Last ' + options.dateRange + ' Days'}</li>
+                    <li><strong>Include Products:</strong> ${options.includeProducts ? 'Yes' : 'No'}</li>
+                    <li><strong>Include History:</strong> ${options.includeHistory ? 'Yes' : 'No'}</li>
+                    <li><strong>Include Alerts:</strong> ${options.includeAlerts ? 'Yes' : 'No'}</li>
+                    <li><strong>Include Predictions:</strong> ${options.includePredictions ? 'Yes' : 'No'}</li>
+                </ul>
+            </div>
+            
+            <div class="row text-center">
+                <div class="col-md-6">
+                    <div class="card border-primary">
+                        <div class="card-body">
+                            <i class="fas fa-file fa-3x text-primary mb-2"></i>
+                            <h5>Estimated File Size</h5>
+                            <p class="text-muted">~2.5 MB</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-success">
+                        <div class="card-body">
+                            <i class="fas fa-clock fa-3x text-success mb-2"></i>
+                            <h5>Generation Time</h5>
+                            <p class="text-muted">~10 seconds</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }, 1000);
+}
+
+// Form submission with loading state
+document.querySelector('form').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating Export...';
+    submitBtn.disabled = true;
+    
+    // Show progress indicator
+    const progressModal = createProgressModal();
+    const modal = new bootstrap.Modal(progressModal);
+    modal.show();
+    
+    // Re-enable button after 30 seconds (fallback)
+    setTimeout(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+        modal.hide();
+    }, 30000);
+});
+
+function createProgressModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-download fa-3x text-primary"></i>
+                    </div>
+                    <h5>Generating Your Export</h5>
+                    <p class="text-muted">Please wait while we prepare your data...</p>
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             style="width: 100%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    return modal;
+}
+</script>
 {% endblock %}

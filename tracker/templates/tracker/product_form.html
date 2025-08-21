@@ -8,231 +8,372 @@
 <style>
     .form-container {
         background: white;
-        border-radius: 10px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        padding: 30px;
-        margin-top: 20px;
+        border-radius: 1rem;
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
     }
     
     .form-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: var(--gradient-primary);
         color: white;
-        padding: 20px;
-        border-radius: 10px 10px 0 0;
-        margin: -30px -30px 30px -30px;
+        padding: 2rem;
+        text-align: center;
+        position: relative;
     }
     
-    .btn-custom {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border: none;
-        color: white;
-        padding: 12px 30px;
-        border-radius: 5px;
-        transition: all 0.3s;
+    .form-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20"><defs><radialGradient id="a" cx="50%" cy="0%" r="100%"><stop offset="0%" stop-color="white" stop-opacity=".1"/><stop offset="100%" stop-color="white" stop-opacity="0"/></radialGradient></defs><rect width="100%" height="100%" fill="url(%23a)"/></svg>');
     }
     
-    .btn-custom:hover {
+    .form-header-content {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .form-body {
+        padding: 2rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: var(--gray-700);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .form-control, .form-select {
+        border: 2px solid var(--gray-200);
+        border-radius: 0.75rem;
+        padding: 0.875rem 1rem;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        background: white;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.15);
+        outline: none;
         transform: translateY(-1px);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        color: white;
-    }
-    
-    .form-control:focus {
-        border-color: #667eea;
-        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
     }
     
     .help-text {
-        background: #f8f9fa;
-        border-left: 4px solid #667eea;
-        padding: 10px 15px;
-        margin-top: 10px;
-        border-radius: 0 5px 5px 0;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        border-left: 4px solid var(--primary-color);
+        padding: 0.75rem 1rem;
+        margin-top: 0.5rem;
+        border-radius: 0 0.5rem 0.5rem 0;
+        font-size: 0.875rem;
+        color: var(--gray-600);
     }
     
     .error-message {
-        background: #f8d7da;
-        border: 1px solid #f5c6cb;
-        color: #721c24;
-        padding: 8px 15px;
-        border-radius: 5px;
-        margin-top: 5px;
+        background: linear-gradient(135deg, #fee2e2 0%, #fccdcd 100%);
+        border: 1px solid #f87171;
+        color: #991b1b;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        margin-top: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .btn-custom {
+        background: var(--gradient-primary);
+        border: none;
+        color: white;
+        padding: 0.875rem 2rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .btn-custom:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+        color: white;
+    }
+    
+    .btn-custom::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.1);
+        transition: left 0.3s ease;
+    }
+    
+    .btn-custom:hover::before {
+        left: 100%;
+    }
+    
+    .info-card {
+        background: linear-gradient(135deg, #e0f2fe 0%, #b3e5fc 100%);
+        border: 1px solid #4fc3f7;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+    }
+    
+    .tips-card {
+        background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+        border: 1px solid #ffb74d;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+    }
+    
+    .current-info-card {
+        background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+        border: 1px solid #ba68c8;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+    }
+    
+    .icon-input {
+        position: relative;
+    }
+    
+    .icon-input .form-control {
+        padding-left: 3rem;
+    }
+    
+    .icon-input .input-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--gray-400);
+        z-index: 1;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container-fluid">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="form-container">
+        <div class="col-xl-8 col-lg-10">
+            <div class="form-container fade-in">
                 <div class="form-header">
-                    <h4 class="mb-0">
-                        <i class="fas fa-{% if form.instance.pk %}edit{% else %}plus{% endif %} me-2"></i>
-                        {% if form.instance.pk %}Edit Product{% else %}Add New Product{% endif %}
-                    </h4>
-                    <p class="mb-0 mt-2 opacity-75">
-                        {% if form.instance.pk %}
-                            Update product information and tracking settings
-                        {% else %}
-                            Add a product to start tracking its price changes
-                        {% endif %}
-                    </p>
+                    <div class="form-header-content">
+                        <div class="mb-3">
+                            <i class="fas fa-{% if form.instance.pk %}edit{% else %}plus{% endif %} fa-3x"></i>
+                        </div>
+                        <h2 class="mb-2">
+                            {% if form.instance.pk %}Edit Product{% else %}Add New Product{% endif %}
+                        </h2>
+                        <p class="mb-0 opacity-90">
+                            {% if form.instance.pk %}
+                                Update product information and tracking settings
+                            {% else %}
+                                Add a product to start tracking its price changes across different platforms
+                            {% endif %}
+                        </p>
+                    </div>
                 </div>
                 
-                <form method="post" novalidate>
-                    {% csrf_token %}
-                    
-                    <!-- Product Name Field -->
-                    <div class="mb-4">
-                        <label for="{{ form.name.id_for_label }}" class="form-label fw-bold">
-                            <i class="fas fa-tag me-2"></i>{{ form.name.label }}
-                        </label>
-                        {{ form.name }}
-                        {% if form.name.help_text %}
-                            <div class="help-text">
-                                <small><i class="fas fa-info-circle me-1"></i>{{ form.name.help_text }}</small>
+                <div class="form-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Product Name Field -->
+                        <div class="form-group">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">
+                                <i class="fas fa-tag text-primary me-2"></i>{{ form.name.label }} *
+                            </label>
+                            <div class="icon-input">
+                                <i class="fas fa-box input-icon"></i>
+                                {{ form.name }}
                             </div>
-                        {% endif %}
-                        {% if form.name.errors %}
-                            {% for error in form.name.errors %}
-                                <div class="error-message">
-                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                            {% if form.name.help_text %}
+                                <div class="help-text">
+                                    <i class="fas fa-info-circle me-2"></i>{{ form.name.help_text }}
                                 </div>
-                            {% endfor %}
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Product URL Field -->
-                    <div class="mb-4">
-                        <label for="{{ form.url.id_for_label }}" class="form-label fw-bold">
-                            <i class="fas fa-link me-2"></i>{{ form.url.label }}
-                        </label>
-                        {{ form.url }}
-                        {% if form.url.help_text %}
-                            <div class="help-text">
-                                <small><i class="fas fa-info-circle me-1"></i>{{ form.url.help_text }}</small>
-                            </div>
-                        {% endif %}
-                        {% if form.url.errors %}
-                            {% for error in form.url.errors %}
-                                <div class="error-message">
-                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Currency and Alert Threshold Row -->
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-4">
-                                <label for="{{ form.currency.id_for_label }}" class="form-label fw-bold">
-                                    <i class="fas fa-coins me-2"></i>{{ form.currency.label }}
-                                </label>
-                                {{ form.currency }}
-                                {% if form.currency.help_text %}
-                                    <div class="help-text">
-                                        <small><i class="fas fa-info-circle me-1"></i>{{ form.currency.help_text }}</small>
+                            {% endif %}
+                            {% if form.name.errors %}
+                                {% for error in form.name.errors %}
+                                    <div class="error-message">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
                                     </div>
-                                {% endif %}
-                                {% if form.currency.errors %}
-                                    {% for error in form.currency.errors %}
-                                        <div class="error-message">
-                                            <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Product URL Field -->
+                        <div class="form-group">
+                            <label for="{{ form.url.id_for_label }}" class="form-label">
+                                <i class="fas fa-link text-primary me-2"></i>{{ form.url.label }} *
+                            </label>
+                            <div class="icon-input">
+                                <i class="fas fa-globe input-icon"></i>
+                                {{ form.url }}
+                            </div>
+                            {% if form.url.help_text %}
+                                <div class="help-text">
+                                    <i class="fas fa-info-circle me-2"></i>{{ form.url.help_text }}
+                                </div>
+                            {% endif %}
+                            {% if form.url.errors %}
+                                {% for error in form.url.errors %}
+                                    <div class="error-message">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Currency and Alert Threshold Row -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.currency.id_for_label }}" class="form-label">
+                                        <i class="fas fa-coins text-primary me-2"></i>{{ form.currency.label }}
+                                    </label>
+                                    {{ form.currency }}
+                                    {% if form.currency.help_text %}
+                                        <div class="help-text">
+                                            <i class="fas fa-info-circle me-2"></i>{{ form.currency.help_text }}
                                         </div>
-                                    {% endfor %}
-                                {% endif %}
+                                    {% endif %}
+                                    {% if form.currency.errors %}
+                                        {% for error in form.currency.errors %}
+                                            <div class="error-message">
+                                                <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.alert_threshold.id_for_label }}" class="form-label">
+                                        <i class="fas fa-bell text-primary me-2"></i>{{ form.alert_threshold.label }}
+                                    </label>
+                                    <div class="icon-input">
+                                        <i class="fas fa-dollar-sign input-icon"></i>
+                                        {{ form.alert_threshold }}
+                                    </div>
+                                    {% if form.alert_threshold.help_text %}
+                                        <div class="help-text">
+                                            <i class="fas fa-info-circle me-2"></i>{{ form.alert_threshold.help_text }}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.alert_threshold.errors %}
+                                        {% for error in form.alert_threshold.errors %}
+                                            <div class="error-message">
+                                                <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="col-md-6">
-                            <div class="mb-4">
-                                <label for="{{ form.alert_threshold.id_for_label }}" class="form-label fw-bold">
-                                    <i class="fas fa-bell me-2"></i>{{ form.alert_threshold.label }}
-                                </label>
-                                {{ form.alert_threshold }}
-                                {% if form.alert_threshold.help_text %}
-                                    <div class="help-text">
-                                        <small><i class="fas fa-info-circle me-1"></i>{{ form.alert_threshold.help_text }}</small>
-                                    </div>
-                                {% endif %}
-                                {% if form.alert_threshold.errors %}
-                                    {% for error in form.alert_threshold.errors %}
-                                        <div class="error-message">
-                                            <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
-                                        </div>
-                                    {% endfor %}
-                                {% endif %}
+                        <!-- Non-field errors -->
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger border-0 shadow-sm">
+                                {% for error in form.non_field_errors %}
+                                    <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Form Actions -->
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center pt-4 border-top">
+                            <a href="{% url 'tracker:dashboard' %}" class="btn btn-outline-secondary mb-2 mb-md-0">
+                                <i class="fas fa-arrow-left me-2"></i>Cancel
+                            </a>
+                            
+                            <button type="submit" class="btn btn-custom btn-lg">
+                                <i class="fas fa-{% if form.instance.pk %}save{% else %}plus{% endif %} me-2"></i>
+                                {% if form.instance.pk %}Update Product{% else %}Add Product{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- Tips Card -->
+                    <div class="tips-card">
+                        <h6 class="fw-bold mb-3">
+                            <i class="fas fa-lightbulb text-warning me-2"></i>Tips for Success
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <ul class="mb-0 small">
+                                    <li class="mb-1">Use direct product page URLs only</li>
+                                    <li class="mb-1">Avoid search or category page links</li>
+                                    <li class="mb-1">Set alert threshold below current price</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <ul class="mb-0 small">
+                                    <li class="mb-1">Supported: Amazon.in, Amazon.com, Flipkart.com</li>
+                                    <li class="mb-1">Automatic updates every 6 hours</li>
+                                    <li class="mb-1">Email notifications for price drops</li>
+                                </ul>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Non-field errors -->
-                    {% if form.non_field_errors %}
-                        <div class="alert alert-danger">
-                            {% for error in form.non_field_errors %}
-                                <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
-                            {% endfor %}
+                    {% if form.instance.pk %}
+                    <!-- Current Product Info -->
+                    <div class="current-info-card">
+                        <h6 class="fw-bold mb-3">
+                            <i class="fas fa-info-circle text-info me-2"></i>Current Information
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="text-center p-3 bg-white rounded shadow-sm">
+                                    <div class="text-primary fw-bold fs-4">
+                                        {% if form.instance.current_price %}
+                                            {{ form.instance.current_price }}
+                                        {% else %}
+                                            --
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted">Current Price ({{ form.instance.currency }})</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center p-3 bg-white rounded shadow-sm">
+                                    <div class="text-success fw-bold fs-4">
+                                        {% if form.instance.last_scraped %}
+                                            {{ form.instance.last_scraped|timesince }}
+                                        {% else %}
+                                            Never
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted">Last Updated</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center p-3 bg-white rounded shadow-sm">
+                                    <div class="fw-bold fs-4 {% if form.instance.is_active %}text-success{% else %}text-secondary{% endif %}">
+                                        {% if form.instance.is_active %}Active{% else %}Inactive{% endif %}
+                                    </div>
+                                    <small class="text-muted">Status</small>
+                                </div>
+                            </div>
                         </div>
+                    </div>
                     {% endif %}
-                    
-                    <!-- Form Actions -->
-                    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
-                        <a href="{% url 'tracker:dashboard' %}" class="btn btn-outline-secondary">
-                            <i class="fas fa-arrow-left me-2"></i>Cancel
-                        </a>
-                        
-                        <button type="submit" class="btn btn-custom">
-                            <i class="fas fa-{% if form.instance.pk %}save{% else %}plus{% endif %} me-2"></i>
-                            {% if form.instance.pk %}Update Product{% else %}Add Product{% endif %}
-                        </button>
-                    </div>
-                </form>
-                
-                <!-- Additional Information -->
-                <div class="mt-4 p-3 bg-light rounded">
-                    <h6 class="fw-bold mb-2">
-                        <i class="fas fa-lightbulb me-2 text-warning"></i>Tips for Success
-                    </h6>
-                    <ul class="mb-0 small">
-                        <li>Use the direct product page URL (not search or category pages)</li>
-                        <li>Supported sites: Amazon.in, Amazon.com, Flipkart.com</li>
-                        <li>Set alert threshold below current price to get notifications</li>
-                        <li>Price updates happen automatically every 6 hours</li>
-                    </ul>
                 </div>
-                
-                {% if form.instance.pk %}
-                <!-- Current Product Info -->
-                <div class="mt-4 p-3 bg-info bg-opacity-10 rounded">
-                    <h6 class="fw-bold mb-2">
-                        <i class="fas fa-info-circle me-2 text-info"></i>Current Information
-                    </h6>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <small class="text-muted">Current Price:</small><br>
-                            <strong>
-                                {% if form.instance.current_price %}
-                                    {{ form.instance.current_price }} {{ form.instance.currency }}
-                                {% else %}
-                                    Not available yet
-                                {% endif %}
-                            </strong>
-                        </div>
-                        <div class="col-md-6">
-                            <small class="text-muted">Last Updated:</small><br>
-                            <strong>
-                                {% if form.instance.last_scraped %}
-                                    {{ form.instance.last_scraped|date:"M d, Y H:i" }}
-                                {% else %}
-                                    Never
-                                {% endif %}
-                            </strong>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>
@@ -241,73 +382,142 @@
 
 {% block extra_js %}
 <script>
-// URL validation and preview
-document.getElementById('{{ form.url.id_for_label }}').addEventListener('blur', function() {
-    const url = this.value.toLowerCase();
-    const supportedSites = ['amazon.in', 'amazon.com', 'flipkart.com'];
-    const isSupported = supportedSites.some(site => url.includes(site));
-    
-    if (url && !isSupported) {
-        this.classList.add('is-invalid');
-    } else if (url) {
-        this.classList.remove('is-invalid');
-        this.classList.add('is-valid');
-    }
-});
-
-// Auto-generate product name from URL (simplified)
-document.getElementById('{{ form.url.id_for_label }}').addEventListener('blur', function() {
+document.addEventListener('DOMContentLoaded', function() {
+    // URL validation and preview
+    const urlField = document.getElementById('{{ form.url.id_for_label }}');
     const nameField = document.getElementById('{{ form.name.id_for_label }}');
     
-    if (!nameField.value && this.value) {
-        // Try to extract product name from URL (very basic)
-        const url = this.value;
-        let productName = '';
+    urlField.addEventListener('blur', function() {
+        const url = this.value.toLowerCase();
+        const supportedSites = ['amazon.in', 'amazon.com', 'flipkart.com'];
+        const isSupported = supportedSites.some(site => url.includes(site));
         
-        if (url.includes('amazon')) {
-            // Amazon URLs often have product names in them
-            const parts = url.split('/');
-            const nameIndex = parts.findIndex(part => part === 'dp') - 1;
-            if (nameIndex > 0 && parts[nameIndex]) {
-                productName = parts[nameIndex].replace(/[-+]/g, ' ').trim();
-            }
-        } else if (url.includes('flipkart')) {
-            // Flipkart URLs often have product names
-            const parts = url.split('/');
-            if (parts.length > 3) {
-                productName = parts[3].replace(/[-+]/g, ' ').trim();
+        // Remove existing validation classes
+        this.classList.remove('is-valid', 'is-invalid');
+        
+        if (url && !isSupported) {
+            this.classList.add('is-invalid');
+            showToast('warning', 'Please enter a valid URL from Amazon or Flipkart');
+        } else if (url) {
+            this.classList.add('is-valid');
+        }
+    });
+
+    // Auto-generate product name from URL
+    urlField.addEventListener('blur', function() {
+        if (!nameField.value && this.value) {
+            const url = this.value;
+            let productName = '';
+            
+            try {
+                if (url.includes('amazon')) {
+                    // Extract from Amazon URL structure
+                    const urlObj = new URL(url);
+                    const pathParts = urlObj.pathname.split('/');
+                    const dpIndex = pathParts.findIndex(part => part === 'dp');
+                    if (dpIndex > 0 && pathParts[dpIndex - 1]) {
+                        productName = pathParts[dpIndex - 1]
+                            .replace(/[-+]/g, ' ')
+                            .replace(/\b\w/g, l => l.toUpperCase())
+                            .trim();
+                    }
+                } else if (url.includes('flipkart')) {
+                    // Extract from Flipkart URL structure
+                    const urlObj = new URL(url);
+                    const pathParts = urlObj.pathname.split('/');
+                    if (pathParts.length > 1) {
+                        productName = pathParts[1]
+                            .replace(/[-+]/g, ' ')
+                            .replace(/\b\w/g, l => l.toUpperCase())
+                            .trim();
+                    }
+                }
+                
+                if (productName && productName.length > 3) {
+                    nameField.value = productName.substring(0, 50);
+                    nameField.focus();
+                    nameField.blur();
+                }
+            } catch (e) {
+                console.log('Could not extract product name from URL');
             }
         }
+    });
+
+    // Form validation on submit
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const url = urlField.value.toLowerCase();
+        const supportedSites = ['amazon.in', 'amazon.com', 'flipkart.com'];
+        const isSupported = supportedSites.some(site => url.includes(site));
         
-        if (productName && productName.length > 3) {
-            nameField.value = productName.substring(0, 50); // Limit length
+        if (url && !isSupported) {
+            e.preventDefault();
+            showToast('error', 'Please enter a valid URL from Amazon or Flipkart.');
+            urlField.focus();
+            return false;
         }
-    }
+        
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+        submitBtn.disabled = true;
+        
+        // Re-enable button after 15 seconds (fallback)
+        setTimeout(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }, 15000);
+    });
+
+    // Add floating labels effect
+    const formControls = document.querySelectorAll('.form-control, .form-select');
+    formControls.forEach(control => {
+        control.addEventListener('focus', function() {
+            this.parentElement.classList.add('focused');
+        });
+        
+        control.addEventListener('blur', function() {
+            if (!this.value) {
+                this.parentElement.classList.remove('focused');
+            }
+        });
+        
+        // Initialize on page load
+        if (control.value) {
+            control.parentElement.classList.add('focused');
+        }
+    });
 });
 
-// Form validation on submit
-document.querySelector('form').addEventListener('submit', function(e) {
-    const url = document.getElementById('{{ form.url.id_for_label }}').value.toLowerCase();
-    const supportedSites = ['amazon.in', 'amazon.com', 'flipkart.com'];
-    const isSupported = supportedSites.some(site => url.includes(site));
+// Toast notification function
+function showToast(type, message) {
+    const toast = document.createElement('div');
+    toast.className = `toast position-fixed top-0 end-0 m-3 fade show`;
+    toast.style.zIndex = '9999';
     
-    if (url && !isSupported) {
-        e.preventDefault();
-        alert('Please enter a valid URL from Amazon or Flipkart.');
-        return false;
-    }
+    const bgClass = type === 'success' ? 'bg-success' : 
+                   type === 'warning' ? 'bg-warning' : 
+                   type === 'error' ? 'bg-danger' : 'bg-info';
     
-    // Show loading state
-    const submitBtn = this.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
-    submitBtn.disabled = true;
+    const icon = type === 'success' ? 'check-circle' :
+                type === 'warning' ? 'exclamation-triangle' :
+                type === 'error' ? 'times-circle' : 'info-circle';
     
-    // Re-enable button after 10 seconds (fallback)
+    toast.innerHTML = `
+        <div class="toast-body ${bgClass} text-white rounded shadow-lg">
+            <i class="fas fa-${icon} me-2"></i>${message}
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
     setTimeout(() => {
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-    }, 10000);
-});
+        toast.classList.add('fade');
+        setTimeout(() => {
+            document.body.removeChild(toast);
+        }, 300);
+    }, 4000);
+}
 </script>
 {% endblock %}

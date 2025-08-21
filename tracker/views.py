@@ -496,8 +496,9 @@ def add_alert(request, product_id):
 
 
 @login_required
+@login_required
 def export_data(request):
-    """Data export view."""
+    """Data export view with proper context."""
     if request.method == 'POST':
         form = ExportForm(request.POST)
         if form.is_valid():
@@ -512,7 +513,32 @@ def export_data(request):
     else:
         form = ExportForm()
     
-    return render(request, 'tracker/export.html', {'form': form})
+    # Calculate context data
+    products = Product.objects.filter(user=request.user)
+    
+    # Calculate approximate history count
+    total_history = PriceHistory.objects.filter(product__user=request.user).count()
+    if not total_history:
+        history_count = products.count() * 10  # Estimate if no actual data
+    else:
+        history_count = total_history
+    
+    # Get alerts count
+    alerts_count = PriceAlert.objects.filter(user=request.user).count()
+    
+    # Get predictions count
+    predictions_count = DemandPrediction.objects.filter(product__user=request.user).count()
+    
+    context = {
+        'form': form,
+        'products': products,
+        'history_count': history_count,
+        'alerts_count': alerts_count,
+        'predictions_count': predictions_count,
+    }
+    
+    return render(request, 'tracker/export.html', context)
+
 
 
 def export_to_csv(request, products):

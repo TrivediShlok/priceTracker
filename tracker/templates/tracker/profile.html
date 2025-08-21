@@ -4,9 +4,15 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-md-8 mx-auto">
-        <div class="card">
-            <div class="card-header">
+    <div class="col-lg-8 mx-auto">
+        {% if error_message %}
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>{{ error_message }}
+        </div>
+        {% endif %}
+        
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
                 <h5 class="mb-0">
                     <i class="fas fa-user-circle me-2"></i>User Profile
                 </h5>
@@ -14,90 +20,133 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <h6 class="text-muted">Account Information</h6>
-                        <table class="table table-borderless">
-                            <tr>
-                                <td><strong>Username:</strong></td>
-                                <td>{{ user.username }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Email:</strong></td>
-                                <td>{{ user.email|default:"Not provided" }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>First Name:</strong></td>
-                                <td>{{ user.first_name|default:"Not provided" }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Last Name:</strong></td>
-                                <td>{{ user.last_name|default:"Not provided" }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Date Joined:</strong></td>
-                                <td>{{ user.date_joined|date:"M d, Y" }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Last Login:</strong></td>
-                                <td>
-                                    {% if user.last_login %}
-                                        {{ user.last_login|timesince }} ago
-                                    {% else %}
-                                        Never
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        </table>
+                        <h6 class="text-primary mb-3">
+                            <i class="fas fa-info-circle me-2"></i>Account Information
+                        </h6>
+                        <div class="table-responsive">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Username:</strong></td>
+                                    <td>{{ user.username }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Email:</strong></td>
+                                    <td>{{ user.email|default:"Not provided" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>First Name:</strong></td>
+                                    <td>{{ user.first_name|default:"Not provided" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Last Name:</strong></td>
+                                    <td>{{ user.last_name|default:"Not provided" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Date Joined:</strong></td>
+                                    <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Last Login:</strong></td>
+                                    <td>
+                                        {% if user.last_login %}
+                                            {{ user.last_login|timesince }} ago
+                                        {% else %}
+                                            Never
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
                     </div>
                     
                     <div class="col-md-6">
-                        <h6 class="text-muted">Activity Statistics</h6>
-                        <div class="row">
-                            <div class="col-sm-6">
-                                <div class="card bg-primary text-white text-center">
-                                    <div class="card-body">
-                                        <h4>{{ total_products }}</h4>
-                                        <p class="mb-0">Total Products</p>
+                        <h6 class="text-primary mb-3">
+                            <i class="fas fa-chart-bar me-2"></i>Activity Statistics
+                        </h6>
+                        
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <div class="card text-center border-primary">
+                                    <div class="card-body py-3">
+                                        <h3 class="text-primary mb-1">{{ total_products }}</h3>
+                                        <small class="text-muted">Total Products</small>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-sm-6">
-                                <div class="card bg-success text-white text-center">
-                                    <div class="card-body">
-                                        <h4>{{ active_products }}</h4>
-                                        <p class="mb-0">Active Products</p>
+                            <div class="col-6">
+                                <div class="card text-center border-success">
+                                    <div class="card-body py-3">
+                                        <h3 class="text-success mb-1">{{ active_products }}</h3>
+                                        <small class="text-muted">Active Products</small>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         
-                        <div class="mt-3">
-                            <div class="d-grid gap-2">
-                                <a href="{% url 'tracker:dashboard' %}" class="btn btn-primary">
-                                    <i class="fas fa-tachometer-alt me-2"></i>Go to Dashboard
-                                </a>
-                                <a href="{% url 'tracker:add_product' %}" class="btn btn-success">
-                                    <i class="fas fa-plus me-2"></i>Add New Product
-                                </a>
-                                <a href="{% url 'tracker:export_data' %}" class="btn btn-outline-secondary">
-                                    <i class="fas fa-download me-2"></i>Export Data
-                                </a>
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="card text-center border-info">
+                                    <div class="card-body py-3">
+                                        <h3 class="text-info mb-1">{{ alerts_count }}</h3>
+                                        <small class="text-muted">Price Alerts</small>
+                                    </div>
+                                </div>
                             </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'tracker:dashboard' %}" class="btn btn-primary">
+                                <i class="fas fa-tachometer-alt me-2"></i>Go to Dashboard
+                            </a>
+                            <a href="{% url 'tracker:add_product' %}" class="btn btn-success">
+                                <i class="fas fa-plus me-2"></i>Add New Product
+                            </a>
+                            <a href="{% url 'tracker:export_data' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-download me-2"></i>Export Data
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- Account Settings -->
-        <div class="card mt-4">
+        {% if recent_changes %}
+        <div class="card shadow-sm mt-4">
             <div class="card-header">
-                <h5 class="mb-0">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Recent Price Changes (7 days)
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for change in recent_changes %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="card-title">{{ change.product.name|truncatechars:20 }}</h6>
+                                <h4 class="{% if change.is_positive %}text-success{% else %}text-danger{% endif %}">
+                                    {% if change.is_positive %}+{% endif %}{{ change.change_percentage|floatformat:1 }}%
+                                </h4>
+                                <small class="text-muted">7-day change</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Account Settings -->
+        <div class="card shadow-sm mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
                     <i class="fas fa-cog me-2"></i>Account Settings
-                </h5>
+                </h6>
             </div>
             <div class="card-body">
                 <p class="text-muted">Manage your account settings and preferences.</p>
-                <div class="alert alert-info">
+                <div class="alert alert-info border-0">
                     <i class="fas fa-info-circle me-2"></i>
                     To change your password or update personal information, please contact the administrator.
                 </div>

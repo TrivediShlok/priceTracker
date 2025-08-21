@@ -3,66 +3,70 @@
 {% block title %}Dashboard - Price Tracker{% endblock %}
 
 {% block content %}
-<div class="row">
-    <!-- Statistics Cards -->
-    <div class="col-md-3 mb-4">
-        <div class="card card-stats bg-primary text-white">
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card card-stats h-100">
             <div class="card-body">
-                <div class="d-flex justify-content-between">
+                <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h3 class="card-title">{{ total_products }}</h3>
-                        <p class="card-text">Total Products</p>
+                        <h2 class="card-title mb-1">{{ total_products }}</h2>
+                        <p class="card-text mb-0 opacity-90">Total Products</p>
+                        <small class="opacity-75">Being tracked</small>
                     </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-box fa-2x"></i>
+                    <div class="text-end">
+                        <i class="fas fa-box fa-3x opacity-50"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <div class="col-md-3 mb-4">
-        <div class="card card-stats bg-success text-white">
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card card-stats bg-success h-100">
             <div class="card-body">
-                <div class="d-flex justify-content-between">
+                <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h3 class="card-title">{{ active_products }}</h3>
-                        <p class="card-text">Active Products</p>
+                        <h2 class="card-title mb-1">{{ active_products }}</h2>
+                        <p class="card-text mb-0 opacity-90">Active Products</p>
+                        <small class="opacity-75">Currently monitoring</small>
                     </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-check-circle fa-2x"></i>
+                    <div class="text-end">
+                        <i class="fas fa-check-circle fa-3x opacity-50"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <div class="col-md-3 mb-4">
-        <div class="card card-stats bg-warning text-white">
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card card-stats bg-warning h-100">
             <div class="card-body">
-                <div class="d-flex justify-content-between">
+                <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h3 class="card-title">{{ products_with_alerts }}</h3>
-                        <p class="card-text">Products with Alerts</p>
+                        <h2 class="card-title mb-1">{{ products_with_alerts }}</h2>
+                        <p class="card-text mb-0 opacity-90">Active Alerts</p>
+                        <small class="opacity-75">Price notifications</small>
                     </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-bell fa-2x"></i>
+                    <div class="text-end">
+                        <i class="fas fa-bell fa-3x opacity-50"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <div class="col-md-3 mb-4">
-        <div class="card card-stats bg-info text-white">
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card card-stats bg-info h-100">
             <div class="card-body">
-                <div class="d-flex justify-content-between">
+                <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h3 class="card-title">{{ successful_scrapes }}</h3>
-                        <p class="card-text">Today's Updates</p>
+                        <h2 class="card-title mb-1">{{ successful_scrapes }}</h2>
+                        <p class="card-text mb-0 opacity-90">Today's Updates</p>
+                        <small class="opacity-75">Successful scrapes</small>
                     </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-sync fa-2x"></i>
+                    <div class="text-end">
+                        <i class="fas fa-sync fa-3x opacity-50"></i>
                     </div>
                 </div>
             </div>
@@ -70,21 +74,35 @@
     </div>
 </div>
 
-<!-- Bulk Update Button -->
+<!-- Quick Actions -->
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Price Updates</h5>
-                    <form method="post" action="{% url 'tracker:bulk_update_prices' %}" style="display: inline;">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-primary" onclick="return confirm('This will update prices for all active products. This may take several minutes. Continue?')">
-                            <i class="fas fa-sync"></i> Update All Prices
-                        </button>
-                    </form>
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+                    <div class="mb-3 mb-md-0">
+                        <h5 class="card-title mb-1">
+                            <i class="fas fa-bolt text-primary me-2"></i>Quick Actions
+                        </h5>
+                        <p class="text-muted mb-0">Manage your price tracking activities</p>
+                        <small class="text-muted">Today's scrapes: {{ successful_scrapes }} / {{ today_scrapes }}</small>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{% url 'tracker:add_product' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i> Add Product
+                        </a>
+                        <form method="post" action="{% url 'tracker:bulk_update_prices' %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success" 
+                                    onclick="return confirm('This will update prices for all active products. This may take several minutes. Continue?')">
+                                <i class="fas fa-sync me-1"></i> Update All Prices
+                            </button>
+                        </form>
+                        <a href="{% url 'tracker:export_data' %}" class="btn btn-info">
+                            <i class="fas fa-download me-1"></i> Export Data
+                        </a>
+                    </div>
                 </div>
-                <small class="text-muted">Successful scrapes today: {{ successful_scrapes }} / {{ today_scrapes }}</small>
             </div>
         </div>
     </div>
@@ -96,21 +114,30 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title mb-0">Recent Price Changes (7 days)</h5>
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line text-primary me-2"></i>Recent Price Changes
+                    <span class="badge bg-primary ms-2">7 days</span>
+                </h5>
             </div>
             <div class="card-body">
                 <div class="row">
                     {% for change in recent_changes %}
-                        <div class="col-md-4 mb-3">
-                            <div class="card border-left-{% if change.is_positive %}success{% else %}danger{% endif %}">
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <div class="card border-0 shadow-sm h-100">
                                 <div class="card-body">
-                                    <h6 class="card-title">{{ change.product.name|truncatechars:25 }}</h6>
-                                    <p class="card-text">
-                                        <span class="badge {% if change.is_positive %}bg-success{% else %}bg-danger{% endif %}">
-                                            {% if change.is_positive %}+{% endif %}{{ change.change_percentage|floatformat:2 }}%
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title mb-0">{{ change.product.name|truncatechars:25 }}</h6>
+                                        <span class="badge {% if change.is_positive %}bg-success{% else %}bg-danger{% endif %} rounded-pill">
+                                            {% if change.is_positive %}+{% endif %}{{ change.change_percentage|floatformat:1 }}%
                                         </span>
-                                        <small class="text-muted">in 7 days</small>
+                                    </div>
+                                    <p class="text-muted mb-2">
+                                        <small>{{ change.product.currency }} {{ change.product.current_price|default:"N/A" }}</small>
                                     </p>
+                                    <div class="progress" style="height: 4px;">
+                                        <div class="progress-bar {% if change.is_positive %}bg-success{% else %}bg-danger{% endif %}" 
+                                             style="width: {{ change.abs_change|floatformat:0 }}%"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -126,58 +153,90 @@
 <div class="row">
     <div class="col-12">
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Your Products</h5>
-                <a href="{% url 'tracker:add_product' %}" class="btn btn-primary">Add Product</a>
+            <div class="card-header">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+                    <h5 class="card-title mb-2 mb-md-0">
+                        <i class="fas fa-list text-primary me-2"></i>Your Products
+                        <span class="badge bg-secondary ms-2">{{ products|length }}</span>
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'tracker:add_product' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus me-1"></i>Add Product
+                        </a>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 {% if products %}
                     <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
+                        <table class="table table-hover mb-0">
+                            <thead>
                                 <tr>
-                                    <th>Product</th>
+                                    <th class="ps-4">Product</th>
                                     <th>Current Price</th>
                                     <th>Last Updated</th>
                                     <th>Status</th>
-                                    <th>Actions</th>
+                                    <th class="pe-4">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for product in products %}
                                     <tr>
-                                        <td>
-                                            <strong>{{ product.name|truncatechars:40 }}</strong>
-                                            <br>
-                                            <small class="text-muted">{{ product.currency }}</small>
+                                        <td class="ps-4">
+                                            <div class="d-flex align-items-center">
+                                                <div class="me-3">
+                                                    <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" 
+                                                         style="width: 40px; height: 40px;">
+                                                        <i class="fas fa-box text-primary"></i>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <h6 class="mb-1">{{ product.name|truncatechars:40 }}</h6>
+                                                    <small class="text-muted">{{ product.currency }}</small>
+                                                </div>
+                                            </div>
                                         </td>
                                         <td>
                                             {% if product.current_price %}
-                                                <strong>{{ product.current_price }}</strong>
+                                                <div class="fw-bold">{{ product.current_price }}</div>
+                                                <small class="text-muted">{{ product.currency }}</small>
                                             {% else %}
-                                                <span class="text-muted">No data</span>
+                                                <span class="text-muted">
+                                                    <i class="fas fa-minus-circle me-1"></i>No data
+                                                </span>
                                             {% endif %}
                                         </td>
                                         <td>
                                             {% if product.last_scraped %}
-                                                {{ product.last_scraped|timesince }} ago
+                                                <div>{{ product.last_scraped|timesince }} ago</div>
+                                                <small class="text-muted">{{ product.last_scraped|date:"M d, H:i" }}</small>
                                             {% else %}
-                                                <span class="text-muted">Never</span>
+                                                <span class="text-muted">
+                                                    <i class="fas fa-clock me-1"></i>Never
+                                                </span>
                                             {% endif %}
                                         </td>
                                         <td>
                                             {% if product.is_active %}
-                                                <span class="badge bg-success">Active</span>
+                                                <span class="badge bg-success rounded-pill">
+                                                    <i class="fas fa-check me-1"></i>Active
+                                                </span>
                                             {% else %}
-                                                <span class="badge bg-secondary">Inactive</span>
+                                                <span class="badge bg-secondary rounded-pill">
+                                                    <i class="fas fa-pause me-1"></i>Inactive
+                                                </span>
                                             {% endif %}
                                         </td>
-                                        <td>
-                                            <div class="btn-group btn-group-sm" role="group">
+                                        <td class="pe-4">
+                                            <div class="btn-group" role="group">
                                                 <a href="{% url 'tracker:product_detail' product.pk %}" 
-                                                   class="btn btn-outline-info btn-sm">View</a>
+                                                   class="btn btn-outline-primary btn-sm" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
                                                 <a href="{% url 'tracker:edit_product' product.pk %}" 
-                                                   class="btn btn-outline-warning btn-sm">Edit</a>
+                                                   class="btn btn-outline-warning btn-sm" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
                                                 <form method="post" action="{% url 'tracker:update_price_manual' product.id %}" style="display: inline;">
                                                     {% csrf_token %}
                                                     <button type="submit" class="btn btn-outline-success btn-sm" 
@@ -195,39 +254,54 @@
 
                     <!-- Pagination -->
                     {% if is_paginated %}
-                        <nav aria-label="Products pagination">
-                            <ul class="pagination justify-content-center">
-                                {% if page_obj.has_previous %}
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page=1">&laquo; First</a>
-                                    </li>
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
-                                    </li>
-                                {% endif %}
+                        <div class="d-flex justify-content-center p-4">
+                            <nav aria-label="Products pagination">
+                                <ul class="pagination mb-0">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1">
+                                                <i class="fas fa-angle-double-left"></i>
+                                            </a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                                                <i class="fas fa-angle-left"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
 
-                                <li class="page-item active">
-                                    <span class="page-link">
-                                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-                                    </span>
-                                </li>
+                                    <li class="page-item active">
+                                        <span class="page-link">
+                                            {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                                        </span>
+                                    </li>
 
-                                {% if page_obj.has_next %}
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
-                                    </li>
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
-                                    </li>
-                                {% endif %}
-                            </ul>
-                        </nav>
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                                                <i class="fas fa-angle-right"></i>
+                                            </a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                                                <i class="fas fa-angle-double-right"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
                     {% endif %}
                 {% else %}
                     <div class="text-center py-5">
-                        <h4>No products found</h4>
-                        <p class="text-muted">Start tracking your first product to see it here.</p>
-                        <a href="{% url 'tracker:add_product' %}" class="btn btn-primary">Add Your First Product</a>
+                        <div class="mb-4">
+                            <i class="fas fa-inbox fa-4x text-muted"></i>
+                        </div>
+                        <h4 class="text-muted">No products found</h4>
+                        <p class="text-muted mb-4">Start tracking your first product to see it here.</p>
+                        <a href="{% url 'tracker:add_product' %}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-plus me-2"></i>Add Your First Product
+                        </a>
                     </div>
                 {% endif %}
             </div>
@@ -238,8 +312,15 @@
 
 {% block extra_js %}
 <script>
-// Toggle product status
+// Toggle product status with improved UX
 function toggleProductStatus(productId) {
+    const button = event.target.closest('button');
+    const originalContent = button.innerHTML;
+    
+    // Show loading state
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    button.disabled = true;
+    
     fetch(`/product/${productId}/toggle-status/`, {
         method: 'POST',
         headers: {
@@ -250,14 +331,46 @@ function toggleProductStatus(productId) {
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            location.reload();
+            // Show success animation
+            button.classList.add('btn-success');
+            button.innerHTML = '<i class="fas fa-check"></i>';
+            
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
         } else {
-            alert('Error updating product status: ' + data.message);
+            button.innerHTML = originalContent;
+            button.disabled = false;
+            
+            // Show error toast
+            const toast = document.createElement('div');
+            toast.className = 'toast position-fixed top-0 end-0 m-3';
+            toast.innerHTML = `
+                <div class="toast-body bg-danger text-white rounded">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Error: ${data.message}
+                </div>
+            `;
+            document.body.appendChild(toast);
+            
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
         }
     })
     .catch(error => {
-        alert('Error updating product status');
+        button.innerHTML = originalContent;
+        button.disabled = false;
+        console.error('Error:', error);
     });
 }
+
+// Auto-refresh product data every 5 minutes
+setInterval(() => {
+    const activeProducts = document.querySelectorAll('.badge.bg-success').length;
+    if (activeProducts > 0) {
+        console.log('Auto-refreshing product data...');
+        // You can implement auto-refresh logic here
+    }
+}, 300000); // 5 minutes
 </script>
 {% endblock %}
